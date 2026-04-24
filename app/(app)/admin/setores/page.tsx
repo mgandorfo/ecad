@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { SetoresClient } from "./setores-client";
 
 export default function SetoresPage() {
-  return (
-    <PagePlaceholder
-      title="Setores"
-      description="Gerenciamento de setores de atendimento"
-      milestone="Milestone 3"
-    />
-  );
+  return <SetoresClient />;
 }

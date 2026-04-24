@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { UsuariosClient } from "./usuarios-client";
 
 export default function UsuariosPage() {
-  return (
-    <PagePlaceholder
-      title="Usuários"
-      description="Gerenciamento de usuários e perfis de acesso"
-      milestone="Milestone 3"
-    />
-  );
+  return <UsuariosClient />;
 }
