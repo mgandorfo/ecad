@@ -69,18 +69,19 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 3 — Cadastros de Suporte (UI)
 
-**Branch:** `feat/m3-cadastros-ui`
+**Branch:** `feat/m3-cadastros-ui` ✅ mergeada em `master`
 **Objetivo:** CRUDs de Setores, Serviços, Status e Usuários — área administrativa, ainda com dados mockados.
 
 **Entregas:**
-- [ ] `/admin/setores` — lista + dialog de criar/editar (Código, Nome)
-- [ ] `/admin/servicos` — lista + dialog de criar/editar (Código, Nome)
-- [ ] `/admin/status` — lista + dialog (Nome, cor/badge)
-- [ ] `/admin/usuarios` — lista + dialog (Nome, Email, Role)
-- [ ] Tabelas com `shadcn/ui` table + busca + paginação client-side
-- [ ] Confirmação de exclusão em dialog
-- [ ] Estados: loading, empty, error (skeletons)
-- [ ] Toasts de sucesso/erro via `sonner`
+- [x] `/admin/setores` — lista + dialog de criar/editar (Código, Nome)
+- [x] `/admin/servicos` — lista + dialog de criar/editar (Código, Nome)
+- [x] `/admin/status` — lista + dialog (Nome, cor/badge)
+- [x] `/admin/usuarios` — lista + dialog (Nome, Email, Role)
+- [x] Tabelas com `shadcn/ui` table + busca + paginação client-side
+- [x] Confirmação de exclusão em dialog
+- [x] Estados: loading, empty, error (skeletons)
+- [x] Toasts de sucesso/erro via `sonner`
+- [x] `RoleContext` no `AppShell` + `AdminGuard` protegendo rotas `/admin/*`
 
 **Commit final:** `feat(m3): CRUDs administrativos de setores, serviços, status e usuários (UI)`
 
