@@ -1,11 +1,10 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { BeneficiarioGuard } from "@/components/beneficiarios/beneficiario-guard";
+import { BeneficiariosClient } from "@/components/beneficiarios/beneficiarios-client";
 
 export default function BeneficiariosPage() {
   return (
-    <PagePlaceholder
-      title="Beneficiários"
-      description="Cadastro e busca de beneficiários"
-      milestone="Milestone 4"
-    />
+    <BeneficiarioGuard>
+      <BeneficiariosClient />
+    </BeneficiarioGuard>
   );
 }
