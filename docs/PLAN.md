@@ -12,15 +12,15 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 **Objetivo:** preparar estrutura, design system e layout base antes de qualquer feature.
 
 **Entregas:**
-- [ ] Configurar `tailwind.config` e tokens de tema (cores, tipografia) em [app/globals.css](app/globals.css)
-- [ ] Inicializar shadcn/ui e instalar componentes base (button, input, label, card, table, dialog, dropdown-menu, select, form, badge, toast/sonner, tabs, sheet, skeleton)
-- [ ] Configurar `next-themes` (light/dark) + provider em [app/layout.tsx](app/layout.tsx)
-- [ ] Criar estrutura de pastas: `app/(public)`, `app/(auth)`, `app/(app)`, `components/ui`, `components/layout`, `lib`, `types`
-- [ ] Componentes de layout: `AppShell`, `Sidebar`, `Topbar`, `Breadcrumbs`, `PageHeader`
-- [ ] Definir tipos TS em `types/` para: `Role`, `User`, `Beneficiario`, `Setor`, `Servico`, `Status`, `Atendimento`
-- [ ] Mocks em `lib/mocks/` com dados de exemplo para desenvolvimento da UI
-- [ ] Configurar ESLint + path aliases (`@/*`)
-- [ ] Copiar `.env.example` com variáveis previstas (Supabase)
+- [x] Configurar `tailwind.config` e tokens de tema (cores, tipografia) em [app/globals.css](app/globals.css)
+- [x] Inicializar shadcn/ui e instalar componentes base (button, input, label, card, table, dialog, dropdown-menu, select, form, badge, toast/sonner, tabs, sheet, skeleton)
+- [x] Configurar `next-themes` (light/dark) + provider em [app/layout.tsx](app/layout.tsx)
+- [x] Criar estrutura de pastas: `app/(public)`, `app/(auth)`, `app/(app)`, `components/ui`, `components/layout`, `lib`, `types`
+- [x] Componentes de layout: `AppShell`, `Sidebar`, `Topbar`, `Breadcrumbs`, `PageHeader`
+- [x] Definir tipos TS em `types/` para: `Role`, `User`, `Beneficiario`, `Setor`, `Servico`, `Status`, `Atendimento`
+- [x] Mocks em `lib/mocks/` com dados de exemplo para desenvolvimento da UI
+- [x] Configurar ESLint + path aliases (`@/*`)
+- [x] Copiar `.env.example` com variáveis previstas (Supabase)
 
 **Commit final:** `chore(m0): setup base, design system e estrutura de pastas`
 
