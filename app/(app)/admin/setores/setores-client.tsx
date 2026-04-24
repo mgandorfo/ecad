@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { mockSetores } from "@/lib/mocks";
 import type { Setor } from "@/lib/types";
@@ -44,13 +44,14 @@ const PAGE_SIZE = 10;
 export function SetoresClient() {
   const [items, setItems] = useState<Setor[]>(mockSetores);
   const [loading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Setor | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Setor | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -79,23 +80,39 @@ export function SetoresClient() {
     setDialogOpen(true);
   }
 
-  function onSubmit(data: FormData) {
-    if (editing) {
-      setItems((prev) =>
-        prev.map((s) => (s.id === editing.id ? { ...s, ...data } : s))
-      );
-      toast.success("Setor atualizado com sucesso.");
-    } else {
-      const newItem: Setor = {
-        id: `s${Date.now()}`,
-        codigo: data.codigo,
-        nome: data.nome,
-        ativo: true,
-      };
-      setItems((prev) => [newItem, ...prev]);
-      toast.success("Setor criado com sucesso.");
+  function handleDialogClose(open: boolean) {
+    if (!open && !saving) {
+      setDialogOpen(false);
+      setEditing(null);
+      reset({ codigo: "", nome: "" });
     }
-    setDialogOpen(false);
+  }
+
+  async function onSubmit(data: FormData) {
+    setSaving(true);
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      if (editing) {
+        setItems((prev) =>
+          prev.map((s) => (s.id === editing.id ? { ...s, ...data } : s))
+        );
+        toast.success("Setor atualizado com sucesso.");
+      } else {
+        const newItem: Setor = {
+          id: `s${Date.now()}`,
+          codigo: data.codigo,
+          nome: data.nome,
+          ativo: true,
+        };
+        setItems((prev) => [newItem, ...prev]);
+        toast.success("Setor criado com sucesso.");
+      }
+      setDialogOpen(false);
+      setEditing(null);
+      reset({ codigo: "", nome: "" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleDelete() {
@@ -124,7 +141,10 @@ export function SetoresClient() {
           placeholder="Buscar por código ou nome..."
           className="pl-8"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </div>
 
@@ -149,14 +169,21 @@ export function SetoresClient() {
               <TableBody>
                 {paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
-                      {search ? "Nenhum setor encontrado para a busca." : "Nenhum setor cadastrado."}
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground py-10"
+                    >
+                      {search
+                        ? "Nenhum setor encontrado para a busca."
+                        : "Nenhum setor cadastrado."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginated.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-mono font-medium">{item.codigo}</TableCell>
+                      <TableCell className="font-mono font-medium">
+                        {item.codigo}
+                      </TableCell>
                       <TableCell>{item.nome}</TableCell>
                       <TableCell>
                         <Badge variant={item.ativo ? "default" : "outline"}>
@@ -207,31 +234,56 @@ export function SetoresClient() {
         </>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(o) => setDialogOpen(o)}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar setor" : "Novo setor"}</DialogTitle>
+            <DialogTitle>
+              {editing ? "Editar setor" : "Novo setor"}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+          >
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="codigo">Código</Label>
-              <Input id="codigo" {...register("codigo")} placeholder="Ex: BPC" />
+              <Input
+                id="codigo"
+                {...register("codigo")}
+                placeholder="Ex: BPC"
+                aria-invalid={!!errors.codigo}
+              />
               {errors.codigo && (
-                <p className="text-xs text-destructive">{errors.codigo.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.codigo.message}
+                </p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nome">Nome</Label>
-              <Input id="nome" {...register("nome")} placeholder="Ex: BPC - Benefício de Prestação Continuada" />
+              <Input
+                id="nome"
+                {...register("nome")}
+                placeholder="Ex: BPC - Benefício de Prestação Continuada"
+                aria-invalid={!!errors.nome}
+              />
               {errors.nome && (
-                <p className="text-xs text-destructive">{errors.nome.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.nome.message}
+                </p>
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={() => handleDialogClose(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2Icon className="animate-spin" />}
                 {editing ? "Salvar alterações" : "Criar setor"}
               </Button>
             </DialogFooter>
@@ -241,7 +293,9 @@ export function SetoresClient() {
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
         onConfirm={handleDelete}
         itemName={deleteTarget?.nome}
       />

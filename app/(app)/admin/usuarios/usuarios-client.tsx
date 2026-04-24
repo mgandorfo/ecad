@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { mockUsuarios } from "@/lib/mocks";
 import type { Perfil, Role } from "@/lib/types";
@@ -47,7 +47,10 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "vigilancia", label: "Vigilância" },
 ];
 
-const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline" | "destructive"> = {
+const ROLE_VARIANT: Record<
+  Role,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
   admin: "default",
   entrevistador: "secondary",
   recepcionista: "outline",
@@ -66,6 +69,7 @@ const PAGE_SIZE = 10;
 export function UsuariosClient() {
   const [items, setItems] = useState<Perfil[]>(mockUsuarios);
   const [loading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,7 +77,13 @@ export function UsuariosClient() {
   const [deleteTarget, setDeleteTarget] = useState<Perfil | null>(null);
   const [roleValue, setRoleValue] = useState<Role>("entrevistador");
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -105,25 +115,43 @@ export function UsuariosClient() {
     setDialogOpen(true);
   }
 
-  function onSubmit(data: FormData) {
-    if (editing) {
-      setItems((prev) =>
-        prev.map((u) => (u.id === editing.id ? { ...u, ...data } : u))
-      );
-      toast.success("Usuário atualizado com sucesso.");
-    } else {
-      const newItem: Perfil = {
-        id: `u${Date.now()}`,
-        nome: data.nome,
-        email: data.email,
-        role: data.role,
-        ativo: true,
-        criado_em: new Date().toISOString(),
-      };
-      setItems((prev) => [newItem, ...prev]);
-      toast.success("Usuário criado com sucesso.");
+  function handleDialogClose(open: boolean) {
+    if (!open && !saving) {
+      setDialogOpen(false);
+      setEditing(null);
+      setRoleValue("entrevistador");
+      reset({ nome: "", email: "", role: "entrevistador" });
     }
-    setDialogOpen(false);
+  }
+
+  async function onSubmit(data: FormData) {
+    setSaving(true);
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      if (editing) {
+        setItems((prev) =>
+          prev.map((u) => (u.id === editing.id ? { ...u, ...data } : u))
+        );
+        toast.success("Usuário atualizado com sucesso.");
+      } else {
+        const newItem: Perfil = {
+          id: `u${Date.now()}`,
+          nome: data.nome,
+          email: data.email,
+          role: data.role,
+          ativo: true,
+          criado_em: new Date().toISOString(),
+        };
+        setItems((prev) => [newItem, ...prev]);
+        toast.success("Usuário criado com sucesso.");
+      }
+      setDialogOpen(false);
+      setEditing(null);
+      setRoleValue("entrevistador");
+      reset({ nome: "", email: "", role: "entrevistador" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleDelete() {
@@ -156,7 +184,10 @@ export function UsuariosClient() {
           placeholder="Buscar por nome ou e-mail..."
           className="pl-8"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </div>
 
@@ -182,15 +213,22 @@ export function UsuariosClient() {
               <TableBody>
                 {paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                      {search ? "Nenhum usuário encontrado para a busca." : "Nenhum usuário cadastrado."}
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground py-10"
+                    >
+                      {search
+                        ? "Nenhum usuário encontrado para a busca."
+                        : "Nenhum usuário cadastrado."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginated.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nome}</TableCell>
-                      <TableCell className="text-muted-foreground">{item.email}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.email}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={ROLE_VARIANT[item.role]}>
                           {getRoleLabel(item.role)}
@@ -216,13 +254,27 @@ export function UsuariosClient() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{filtered.length} usuário{filtered.length !== 1 ? "s" : ""}</span>
+              <span>
+                {filtered.length} usuário{filtered.length !== 1 ? "s" : ""}
+              </span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
                   Anterior
                 </Button>
-                <span>{page} / {totalPages}</span>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+                <span>
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
                   Próximo
                 </Button>
               </div>
@@ -231,50 +283,87 @@ export function UsuariosClient() {
         </>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(o) => setDialogOpen(o)}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar usuário" : "Novo usuário"}</DialogTitle>
+            <DialogTitle>
+              {editing ? "Editar usuário" : "Novo usuário"}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+          >
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nome">Nome completo</Label>
-              <Input id="nome" {...register("nome")} placeholder="Ex: Ana Souza" />
-              {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
+              <Label htmlFor="u-nome">Nome completo</Label>
+              <Input
+                id="u-nome"
+                {...register("nome")}
+                placeholder="Ex: Ana Souza"
+                aria-invalid={!!errors.nome}
+              />
+              {errors.nome && (
+                <p className="text-xs text-destructive">
+                  {errors.nome.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" {...register("email")} placeholder="ana@caarapo.ms.gov.br" />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              <Label htmlFor="u-email">E-mail</Label>
+              <Input
+                id="u-email"
+                type="email"
+                {...register("email")}
+                placeholder="ana@caarapo.ms.gov.br"
+                aria-invalid={!!errors.email}
+              />
+              {errors.email && (
+                <p className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Perfil de acesso</Label>
-              <Select
-                value={roleValue}
-                onValueChange={(v) => {
-                  const role = v as Role;
-                  setRoleValue(role);
-                  setValue("role", role, { shouldValidate: true });
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o perfil" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
+              <div className="w-full">
+                <Select
+                  value={roleValue}
+                  onValueChange={(v) => {
+                    if (!v) return;
+                    const role = v as Role;
+                    setRoleValue(role);
+                    setValue("role", role, { shouldValidate: true });
+                  }}
+                >
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.role}>
+                    <SelectValue placeholder="Selecione o perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {errors.role && (
+                <p className="text-xs text-destructive">
+                  {errors.role.message}
+                </p>
+              )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={() => handleDialogClose(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2Icon className="animate-spin" />}
                 {editing ? "Salvar alterações" : "Criar usuário"}
               </Button>
             </DialogFooter>
@@ -284,7 +373,9 @@ export function UsuariosClient() {
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
         onConfirm={handleDelete}
         itemName={deleteTarget?.nome}
       />

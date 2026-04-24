@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { mockStatus } from "@/lib/mocks";
 import type { StatusAtendimento } from "@/lib/types";
@@ -35,11 +35,16 @@ import { RowActions } from "@/components/admin/row-actions";
 
 const schema = z.object({
   nome: z.string().min(1, "Nome obrigatório").max(60, "Máximo 60 caracteres"),
-  cor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida (use formato #rrggbb)"),
-  ordem: z.string().min(1, "Ordem obrigatória").refine(
-    (v) => !isNaN(Number(v)) && Number(v) >= 1,
-    "Ordem deve ser um número maior que zero"
-  ),
+  cor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida — use formato #rrggbb"),
+  ordem: z
+    .string()
+    .min(1, "Ordem obrigatória")
+    .refine(
+      (v) => !isNaN(Number(v)) && Number(v) >= 1,
+      "Ordem deve ser um número maior que zero"
+    ),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -48,18 +53,33 @@ const PAGE_SIZE = 10;
 export function StatusClient() {
   const [items, setItems] = useState<StatusAtendimento[]>(mockStatus);
   const [loading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StatusAtendimento | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<StatusAtendimento | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StatusAtendimento | null>(
+    null
+  );
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
+  const corWatched = watch("cor") ?? "#6366f1";
+
   const filtered = useMemo(
-    () => items.filter((s) => s.nome.toLowerCase().includes(search.toLowerCase())),
+    () =>
+      items.filter((s) =>
+        s.nome.toLowerCase().includes(search.toLowerCase())
+      ),
     [items, search]
   );
 
@@ -78,27 +98,47 @@ export function StatusClient() {
     setDialogOpen(true);
   }
 
-  function onSubmit(data: FormData) {
-    const ordem = Number(data.ordem);
-    if (editing) {
-      setItems((prev) =>
-        prev.map((s) =>
-          s.id === editing.id ? { ...s, nome: data.nome, cor: data.cor, ordem } : s
-        )
-      );
-      toast.success("Status atualizado com sucesso.");
-    } else {
-      const newItem: StatusAtendimento = {
-        id: `st${Date.now()}`,
-        nome: data.nome,
-        cor: data.cor,
-        ordem,
-        ativo: true,
-      };
-      setItems((prev) => [...prev, newItem].sort((a, b) => a.ordem - b.ordem));
-      toast.success("Status criado com sucesso.");
+  function handleDialogClose(open: boolean) {
+    if (!open && !saving) {
+      setDialogOpen(false);
+      setEditing(null);
+      reset({ nome: "", cor: "#6366f1", ordem: "" });
     }
-    setDialogOpen(false);
+  }
+
+  async function onSubmit(data: FormData) {
+    setSaving(true);
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      const ordem = Number(data.ordem);
+      if (editing) {
+        setItems((prev) =>
+          prev.map((s) =>
+            s.id === editing.id
+              ? { ...s, nome: data.nome, cor: data.cor, ordem }
+              : s
+          )
+        );
+        toast.success("Status atualizado com sucesso.");
+      } else {
+        const newItem: StatusAtendimento = {
+          id: `st${Date.now()}`,
+          nome: data.nome,
+          cor: data.cor,
+          ordem,
+          ativo: true,
+        };
+        setItems((prev) =>
+          [...prev, newItem].sort((a, b) => a.ordem - b.ordem)
+        );
+        toast.success("Status criado com sucesso.");
+      }
+      setDialogOpen(false);
+      setEditing(null);
+      reset({ nome: "", cor: "#6366f1", ordem: "" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleDelete() {
@@ -127,7 +167,10 @@ export function StatusClient() {
           placeholder="Buscar por nome..."
           className="pl-8"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </div>
 
@@ -153,14 +196,21 @@ export function StatusClient() {
               <TableBody>
                 {paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                      {search ? "Nenhum status encontrado para a busca." : "Nenhum status cadastrado."}
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground py-10"
+                    >
+                      {search
+                        ? "Nenhum status encontrado para a busca."
+                        : "Nenhum status cadastrado."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginated.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="text-muted-foreground">{item.ordem}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.ordem}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span
@@ -170,7 +220,9 @@ export function StatusClient() {
                           {item.nome}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">{item.cor}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {item.cor}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={item.ativo ? "default" : "outline"}>
                           {item.ativo ? "Ativo" : "Inativo"}
@@ -193,11 +245,23 @@ export function StatusClient() {
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{filtered.length} status</span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
                   Anterior
                 </Button>
-                <span>{page} / {totalPages}</span>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+                <span>
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
                   Próximo
                 </Button>
               </div>
@@ -206,40 +270,83 @@ export function StatusClient() {
         </>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(o) => setDialogOpen(o)}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar status" : "Novo status"}</DialogTitle>
+            <DialogTitle>
+              {editing ? "Editar status" : "Novo status"}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+          >
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nome">Nome</Label>
-              <Input id="nome" {...register("nome")} placeholder="Ex: Aguardando" />
-              {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
+              <Label htmlFor="st-nome">Nome</Label>
+              <Input
+                id="st-nome"
+                {...register("nome")}
+                placeholder="Ex: Aguardando"
+                aria-invalid={!!errors.nome}
+              />
+              {errors.nome && (
+                <p className="text-xs text-destructive">
+                  {errors.nome.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cor">Cor</Label>
+              <Label htmlFor="st-cor-hex">Cor</Label>
               <div className="flex items-center gap-2">
+                {/* color picker sincroniza com o campo texto via watch+setValue */}
                 <input
                   type="color"
-                  id="cor"
-                  {...register("cor")}
+                  value={/^#[0-9a-fA-F]{6}$/.test(corWatched) ? corWatched : "#6366f1"}
+                  onChange={(e) =>
+                    setValue("cor", e.target.value, { shouldValidate: true })
+                  }
                   className="h-8 w-12 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                  aria-label="Escolher cor"
                 />
-                <Input {...register("cor")} placeholder="#6366f1" className="font-mono" />
+                <Input
+                  id="st-cor-hex"
+                  {...register("cor")}
+                  placeholder="#6366f1"
+                  className="font-mono"
+                  aria-invalid={!!errors.cor}
+                />
               </div>
-              {errors.cor && <p className="text-xs text-destructive">{errors.cor.message}</p>}
+              {errors.cor && (
+                <p className="text-xs text-destructive">{errors.cor.message}</p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="ordem">Ordem</Label>
-              <Input id="ordem" type="number" min={1} {...register("ordem")} placeholder="1" />
-              {errors.ordem && <p className="text-xs text-destructive">{errors.ordem.message}</p>}
+              <Label htmlFor="st-ordem">Ordem de exibição</Label>
+              <Input
+                id="st-ordem"
+                type="number"
+                min={1}
+                {...register("ordem")}
+                placeholder="1"
+                aria-invalid={!!errors.ordem}
+              />
+              {errors.ordem && (
+                <p className="text-xs text-destructive">
+                  {errors.ordem.message}
+                </p>
+              )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={() => handleDialogClose(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2Icon className="animate-spin" />}
                 {editing ? "Salvar alterações" : "Criar status"}
               </Button>
             </DialogFooter>
@@ -249,7 +356,9 @@ export function StatusClient() {
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
         onConfirm={handleDelete}
         itemName={deleteTarget?.nome}
       />
