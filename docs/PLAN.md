@@ -28,38 +28,42 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 1 — Landing Page & Autenticação (UI)
 
-**Branch:** `feat/m1-landing-auth-ui`
+**Branch:** `feat/m1-m2-landing-auth-shell` ✅ mergeada em `master`
 **Objetivo:** página pública + telas de login/logout/recuperação (sem backend, apenas UI).
 
 **Entregas:**
 - [ ] Landing page em [app/(public)/page.tsx](app/(public)/page.tsx) — hero, features, CTA de login
-- [ ] Tela de login em [app/(auth)/login/page.tsx](app/(auth)/login/page.tsx) com `react-hook-form` + `zod`
-- [ ] Tela de recuperação de senha em [app/(auth)/recuperar/page.tsx](app/(auth)/recuperar/page.tsx)
-- [ ] Página de redefinição em [app/(auth)/redefinir/page.tsx](app/(auth)/redefinir/page.tsx)
-- [ ] Validação client-side com mensagens via `sonner`
-- [ ] Redirecionamento simulado para `/dashboard` após login mockado
-- [ ] Logo do E-CAD e identidade visual
+- [x] Tela de login em [app/(auth)/login/page.tsx](app/(auth)/login/page.tsx) — formulário mockado com redirect para `/dashboard`
+- [ ] Tela de recuperação de senha em [app/(auth)/recuperar/page.tsx](app/(auth)/recuperar/page.tsx) — estrutura criada, conteúdo pendente
+- [ ] Página de redefinição em [app/(auth)/redefinir/page.tsx](app/(auth)/redefinir/page.tsx) — estrutura criada, conteúdo pendente
+- [ ] Validação client-side com mensagens via `sonner` (`react-hook-form` + `zod`)
+- [x] Redirecionamento simulado para `/dashboard` após login mockado
+- [x] Logo do E-CAD e identidade visual ([components/layout/logo.tsx](components/layout/logo.tsx))
+- [x] Layout auth centralizado ([app/(auth)/layout.tsx](app/(auth)/layout.tsx))
+- [x] Dark mode como padrão + paleta azul institucional ([app/globals.css](app/globals.css))
 
-**Commit final:** `feat(m1): landing page e telas de autenticação (UI mockada)`
+**Commit final:** `feat(m1-m2): esqueleto visual E-CAD — shell, navegação e design system`
 
 ---
 
 ## Milestone 2 — Shell Autenticado & Navegação por Role (UI)
 
-**Branch:** `feat/m2-app-shell-ui`
+**Branch:** `feat/m1-m2-landing-auth-shell` ✅ mergeada em `master`
 **Objetivo:** layout interno após login, com menus adaptados por perfil (mock de role).
 
 **Entregas:**
-- [ ] Layout `app/(app)/layout.tsx` com sidebar + topbar
-- [ ] Seletor de role fake no topbar (dev-only) para testar views: Admin / Entrevistador / Recepcionista / Vigilância
-- [ ] Menu dinâmico conforme role (mockado)
-- [ ] Página `/dashboard` placeholder
-- [ ] Página `/perfil` do usuário
-- [ ] Menu de usuário (avatar + dropdown logout)
-- [ ] Componente `RoleGuard` para esconder áreas conforme role
-- [ ] Responsividade mobile (sheet lateral)
+- [x] Layout `app/(app)/layout.tsx` com sidebar + topbar via `AppShell`
+- [x] Seletor de role fake no topbar (dev-only) — Admin / Entrevistador / Recepcionista / Vigilância
+- [x] Menu dinâmico conforme role (mockado) com seção Administração separada
+- [x] Página `/dashboard` placeholder com cards de KPI
+- [x] Página `/perfil` do usuário com avatar e badge de role
+- [x] Menu de usuário (avatar + dropdown com nome, email, badge, logout)
+- [x] Componente `RoleGuard` ([components/layout/role-guard.tsx](components/layout/role-guard.tsx))
+- [x] Responsividade mobile — Sheet lateral que fecha ao navegar
+- [x] Páginas placeholder para todas as rotas do menu (sem 404)
+- [x] Middleware stub condicional (não quebra sem Supabase configurado)
 
-**Commit final:** `feat(m2): app shell com navegação por role (mockada)`
+**Commit final:** `feat(m1-m2): esqueleto visual E-CAD — shell, navegação e design system`
 
 ---
 
