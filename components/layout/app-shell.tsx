@@ -14,21 +14,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const currentUser: Perfil = { ...DEV_USER, role: devRole };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar — visível só em md+ */}
       <div className="hidden md:flex">
         <Sidebar role={devRole} />
       </div>
 
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="flex items-center md:hidden px-4 h-14 border-b">
-          <MobileSidebar role={devRole} />
-        </div>
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar
           user={currentUser}
           devRole={devRole}
           onDevRoleChange={setDevRole}
+          mobileSidebar={<MobileSidebar role={devRole} />}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
