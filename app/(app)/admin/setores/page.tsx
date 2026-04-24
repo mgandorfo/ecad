@@ -1,11 +1,10 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { AdminGuard } from "@/components/admin/admin-guard";
+import { SetoresClient } from "./setores-client";
 
 export default function SetoresPage() {
   return (
-    <PagePlaceholder
-      title="Setores"
-      description="Gerenciamento de setores de atendimento"
-      milestone="Milestone 3"
-    />
+    <AdminGuard>
+      <SetoresClient />
+    </AdminGuard>
   );
 }

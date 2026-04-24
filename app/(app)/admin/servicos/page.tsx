@@ -1,11 +1,10 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { AdminGuard } from "@/components/admin/admin-guard";
+import { ServicosClient } from "./servicos-client";
 
 export default function ServicosPage() {
   return (
-    <PagePlaceholder
-      title="Serviços"
-      description="Gerenciamento de serviços oferecidos"
-      milestone="Milestone 3"
-    />
+    <AdminGuard>
+      <ServicosClient />
+    </AdminGuard>
   );
 }

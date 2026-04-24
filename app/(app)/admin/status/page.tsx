@@ -1,11 +1,10 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { AdminGuard } from "@/components/admin/admin-guard";
+import { StatusClient } from "./status-client";
 
 export default function StatusPage() {
   return (
-    <PagePlaceholder
-      title="Status"
-      description="Configuração dos status de atendimento"
-      milestone="Milestone 3"
-    />
+    <AdminGuard>
+      <StatusClient />
+    </AdminGuard>
   );
 }
