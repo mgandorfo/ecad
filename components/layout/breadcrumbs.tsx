@@ -20,6 +20,10 @@ const routeLabels: Record<string, string> = {
   novo: "Novo",
 };
 
+function isId(segment: string) {
+  return /^[a-z0-9_-]{2,}$/i.test(segment) && !routeLabels[segment];
+}
+
 export function Breadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
@@ -33,7 +37,7 @@ export function Breadcrumbs() {
       </Link>
       {segments.map((segment, index) => {
         const href = "/" + segments.slice(0, index + 1).join("/");
-        const label = routeLabels[segment] ?? segment;
+        const label = routeLabels[segment] ?? (isId(segment) ? "Detalhes" : segment);
         const isLast = index === segments.length - 1;
 
         return (
