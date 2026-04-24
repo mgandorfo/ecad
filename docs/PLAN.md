@@ -89,16 +89,16 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 4 — Beneficiários (UI)
 
-**Branch:** `feat/m4-beneficiarios-ui`
+**Branch:** `feat/m4-beneficiarios-ui` ✅ mergeada em `master`
 **Objetivo:** cadastro e busca de beneficiários.
 
 **Entregas:**
-- [ ] `/beneficiarios` — lista com busca por nome/CPF
-- [ ] `/beneficiarios/novo` — formulário (Nome Completo, CPF, Endereço completo)
-- [ ] `/beneficiarios/[id]` — visualização + edição
-- [ ] Máscara e validação de CPF com `zod`
-- [ ] Autocomplete de beneficiários para uso em atendimentos
-- [ ] Histórico de atendimentos do beneficiário (placeholder)
+- [x] `/beneficiarios` — lista com busca por nome/CPF
+- [x] `/beneficiarios/novo` — formulário (Nome Completo, CPF, Endereço completo)
+- [x] `/beneficiarios/[id]` — visualização + edição
+- [x] Máscara e validação de CPF com `zod`
+- [x] Autocomplete de beneficiários para uso em atendimentos
+- [x] Histórico de atendimentos do beneficiário (placeholder)
 
 **Commit final:** `feat(m4): cadastro e busca de beneficiários (UI)`
 
