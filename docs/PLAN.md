@@ -146,17 +146,18 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 7 — Supabase: Schema, RLS & Migrations
 
-**Branch:** `feat/m7-supabase-schema`
+**Branch:** `feat/supabase-core` ✅ mergeada em `master`
 **Objetivo:** virada para backend real. Modelagem de banco e políticas de acesso.
 
 **Entregas:**
-- [ ] Projeto Supabase criado e variáveis em `.env.local`
-- [ ] Migrations em [supabase/migrations/](supabase/migrations/) para tabelas: `profiles`, `setores`, `servicos`, `status`, `beneficiarios`, `atendimentos`
-- [ ] Enum de roles: `admin`, `entrevistador`, `recepcionista`, `vigilancia`
-- [ ] Trigger para criar `profile` a partir de `auth.users`
-- [ ] Políticas RLS por tabela e por role (documentadas)
-- [ ] Seeds de desenvolvimento: setores, serviços e status iniciais
-- [ ] Tipos TS gerados via `supabase gen types typescript`
+- [x] Projeto Supabase criado e variáveis em `.env.local`
+- [x] Migrations em [supabase/migrations/](supabase/migrations/) para tabelas: `profiles`, `setores`, `servicos`, `status_atendimento`, `beneficiarios`, `atendimentos`
+- [x] Enum de roles: `admin`, `entrevistador`, `recepcionista`, `vigilancia`
+- [x] Trigger para criar `profile` a partir de `auth.users`
+- [x] Políticas RLS por tabela e por role (documentadas)
+- [x] Seeds de desenvolvimento: setores, serviços e status iniciais
+- [x] Tipos TS em [lib/supabase/types.ts](lib/supabase/types.ts) + script `npm run db:types`
+- [x] Correção: `middleware.ts` → `proxy.ts` (convenção Next.js 16)
 
 **Commit final:** `feat(m7): schema Supabase, RLS e migrations`
 
