@@ -3,9 +3,7 @@ import {
   Users,
   Layers,
   Wrench,
-  Activity,
   ClipboardList,
-  ListChecks,
   BarChart2,
   FileText,
   UserCircle,
@@ -27,21 +25,9 @@ export const navItems: NavItem[] = [
     roles: ["admin", "entrevistador", "vigilancia"],
   },
   {
-    label: "Fila de Atendimento",
-    href: "/fila",
+    label: "Atendimentos",
+    href: "/atendimentos",
     icon: ClipboardList,
-    roles: ["admin", "entrevistador"],
-  },
-  {
-    label: "Meus Atendimentos",
-    href: "/meus-atendimentos",
-    icon: ListChecks,
-    roles: ["entrevistador"],
-  },
-  {
-    label: "Novo Atendimento",
-    href: "/atendimentos/novo",
-    icon: Activity,
     roles: ["admin", "entrevistador", "recepcionista"],
   },
   {
