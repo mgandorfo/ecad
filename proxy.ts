@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Middleware stub — Supabase auth será integrado no Milestone 8.
+// Proxy stub — Supabase auth será integrado no Milestone 8.
 // Sem variáveis de ambiente configuradas, passa todas as requisições.
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const hasSupabase =
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
