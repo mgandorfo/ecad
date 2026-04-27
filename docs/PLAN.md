@@ -106,18 +106,20 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 5 — Fila de Atendimento & Gestão (UI)
 
-**Branch:** `feat/m5-atendimentos-ui`
+**Branch:** `feat/m5-atendimentos-ui` ✅ mergeada em `master`
 **Objetivo:** núcleo do produto — criar atendimento, fila com prioridade, assumir e gerenciar.
 
 **Entregas:**
-- [ ] `/atendimentos/novo` — formulário (beneficiário, setor, serviço, prioridade, anotações)
-- [ ] `/fila` — lista de espera ordenada por prioridade (Entrevistador)
-- [ ] Botão "Assumir atendimento" na fila
-- [ ] `/meus-atendimentos` — lista de atendimentos do usuário logado
-- [ ] `/atendimentos/[id]` — detalhes, troca de status, anotações, concluir
-- [ ] Badges de status com cores e de prioridade
-- [ ] Filtros: setor, serviço, status, data
-- [ ] Indicador visual de tempo de espera
+- [x] `/atendimentos/novo` — formulário (beneficiário, setor, serviço, prioridade, anotações)
+- [x] `/fila` — lista de espera ordenada por prioridade (Entrevistador)
+- [x] Botão "Assumir atendimento" na fila com dialog de confirmação
+- [x] `/meus-atendimentos` — lista de atendimentos do usuário logado com filtro por status
+- [x] `/atendimentos/[id]` — detalhes, troca de status, área de anotações editável, concluir
+- [x] Badges de status com cores dinâmicas e de prioridade
+- [x] Filtros: setor, serviço, status
+- [x] Indicador visual de tempo de espera (atualiza a cada 30s)
+- [x] Store reativo de atendimentos (`lib/stores/atendimentos.ts`) para estado entre páginas
+- [x] shadcn/ui: alert-dialog, switch, textarea adicionados
 
 **Commit final:** `feat(m5): fila e gestão de atendimentos (UI)`
 

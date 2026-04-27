@@ -1,11 +1,5 @@
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { FilaClient } from "@/components/atendimentos/fila-client";
 
 export default function FilaPage() {
-  return (
-    <PagePlaceholder
-      title="Fila de Atendimento"
-      description="Lista de espera ordenada por prioridade"
-      milestone="Milestone 5"
-    />
-  );
+  return <FilaClient />;
 }
