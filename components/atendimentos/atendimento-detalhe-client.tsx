@@ -85,9 +85,9 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
     return (
       <div className="flex flex-col items-center gap-4 py-20 text-center text-muted-foreground">
         <p className="text-sm">Atendimento não encontrado.</p>
-        <Link href="/fila" className={buttonVariants({ variant: "outline" })}>
+        <Link href="/atendimentos" className={buttonVariants({ variant: "outline" })}>
           <ArrowLeftIcon />
-          Voltar para a fila
+          Voltar para atendimentos
         </Link>
       </div>
     );
@@ -126,7 +126,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
     atendimentosStore.concluir(id, STATUS_CONCLUIDO);
     toast.success("Atendimento concluído.");
     setConfirmConcluir(false);
-    router.push("/meus-atendimentos");
+    router.push("/atendimentos?aba=meus");
   }
 
   function handleAssumirConfirm() {
@@ -152,11 +152,11 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
         actions={
           <div className="flex items-center gap-2">
             <Link
-              href="/fila"
+              href="/atendimentos"
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               <ArrowLeftIcon />
-              Fila
+              Atendimentos
             </Link>
             {canAssume && (
               <Button size="sm" onClick={() => setAssumirConfirm(true)}>

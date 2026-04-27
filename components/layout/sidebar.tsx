@@ -31,7 +31,9 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
           const Icon = item.icon;
           const active =
             pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+            (item.href !== "/dashboard" &&
+              item.href !== "/atendimentos" &&
+              pathname.startsWith(item.href + "/"));
 
           return (
             <Link

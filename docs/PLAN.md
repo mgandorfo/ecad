@@ -127,16 +127,18 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 6 — Dashboard & Relatórios (UI)
 
-**Branch:** `feat/m6-dashboard-relatorios-ui`
+**Branch:** `feat/m6-dashboard-relatorios-ui` ✅ mergeada em `master`
 **Objetivo:** visualizações analíticas com dados mockados.
 
 **Entregas:**
-- [ ] `/dashboard` com cards de KPI (total do dia, em espera, concluídos, tempo médio)
-- [ ] Gráficos com `recharts`: atendimentos por dia, por setor, por serviço, por status
-- [ ] Filtros globais do dashboard (período, setor, serviço, servidor)
-- [ ] `/relatorios` — tabela detalhada com filtros completos
-- [ ] Botão de exportar CSV (client-side inicialmente)
-- [ ] Visão restrita por role (Entrevistador vê só seus dados; Vigilância vê tudo, read-only)
+- [x] `/dashboard` com cards de KPI (total do período, em espera, concluídos, tempo médio)
+- [x] Gráficos com `recharts`: atendimentos por dia, por setor, por serviço, por status
+- [x] Filtros globais do dashboard (período, setor, servidor)
+- [x] `/relatorios` — tabela detalhada com filtros completos (busca, data, setor, serviço, status, servidor, prioridade)
+- [x] Botão de exportar CSV (client-side, com BOM UTF-8)
+- [x] Visão restrita por role (Entrevistador vê só seus dados; Vigilância vê tudo, read-only)
+- [x] `/atendimentos` consolidou fila + meus atendimentos em abas (refatoração do M5)
+- [x] `NovoAtendimentoSheet` integrado na página de atendimentos
 
 **Commit final:** `feat(m6): dashboard e relatórios com dados mockados (UI)`
 
