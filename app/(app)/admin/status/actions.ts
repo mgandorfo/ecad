@@ -36,7 +36,10 @@ export async function listarStatus(search = "", page = 1, pageSize = 10): Promis
 
   const { data, error, count } = await query.range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarStatus]", error.message);
+    throw new Error("Falha ao buscar status.");
+  }
   return { items: (data ?? []) as StatusAtendimento[], total: count ?? 0 };
 }
 
@@ -55,7 +58,8 @@ export async function criarStatus(raw: StatusFormData): Promise<ActionResult<Sta
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um status com este nome." };
-    return { ok: false, error: error.message };
+    console.error("[criarStatus]", error.message);
+    return { ok: false, error: "Falha ao salvar status. Tente novamente." };
   }
 
   revalidatePath("/admin/status");
@@ -78,7 +82,8 @@ export async function atualizarStatus(id: string, raw: StatusFormData): Promise<
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um status com este nome." };
-    return { ok: false, error: error.message };
+    console.error("[atualizarStatus]", error.message);
+    return { ok: false, error: "Falha ao atualizar status. Tente novamente." };
   }
 
   revalidatePath("/admin/status");
@@ -91,7 +96,8 @@ export async function excluirStatus(id: string): Promise<ActionResult> {
 
   if (error) {
     if (error.code === "23503") return { ok: false, error: "Este status possui atendimentos vinculados e não pode ser excluído." };
-    return { ok: false, error: error.message };
+    console.error("[excluirStatus]", error.message);
+    return { ok: false, error: "Falha ao excluir status. Tente novamente." };
   }
 
   revalidatePath("/admin/status");

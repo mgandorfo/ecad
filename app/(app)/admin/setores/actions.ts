@@ -32,7 +32,10 @@ export async function listarSetores(search = "", page = 1, pageSize = 10): Promi
 
   const { data, error, count } = await query.range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarSetores]", error.message);
+    throw new Error("Falha ao buscar setores.");
+  }
   return { items: (data ?? []) as Setor[], total: count ?? 0 };
 }
 
@@ -51,7 +54,8 @@ export async function criarSetor(raw: SetorFormData): Promise<ActionResult<Setor
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um setor com este código." };
-    return { ok: false, error: error.message };
+    console.error("[criarSetor]", error.message);
+    return { ok: false, error: "Falha ao salvar setor. Tente novamente." };
   }
 
   revalidatePath("/admin/setores");
@@ -74,7 +78,8 @@ export async function atualizarSetor(id: string, raw: SetorFormData): Promise<Ac
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um setor com este código." };
-    return { ok: false, error: error.message };
+    console.error("[atualizarSetor]", error.message);
+    return { ok: false, error: "Falha ao atualizar setor. Tente novamente." };
   }
 
   revalidatePath("/admin/setores");
@@ -87,7 +92,8 @@ export async function excluirSetor(id: string): Promise<ActionResult> {
 
   if (error) {
     if (error.code === "23503") return { ok: false, error: "Este setor possui serviços vinculados e não pode ser excluído." };
-    return { ok: false, error: error.message };
+    console.error("[excluirSetor]", error.message);
+    return { ok: false, error: "Falha ao excluir setor. Tente novamente." };
   }
 
   revalidatePath("/admin/setores");
