@@ -186,16 +186,19 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 9 — Integração Cadastros & Beneficiários
 
-**Branch:** `feat/m9-cadastros-integration`
+**Branch:** `feat/m9-cadastros-integration` ✅ mergeada em `master`
 **Objetivo:** trocar mocks por queries reais nos módulos de cadastro.
 
 **Entregas:**
-- [ ] Server Actions / Route Handlers para CRUD de setores, serviços, status, usuários
-- [ ] CRUD de beneficiários com validação server-side via `zod`
-- [ ] Revalidação de cache (`revalidatePath`) após mutações
-- [ ] Tratamento de erros e toasts de feedback
-- [ ] Respeito à RLS em todas as queries (sem service key no cliente)
-- [ ] Paginação e busca server-side
+- [x] Server Actions para CRUD de setores, serviços, status e usuários
+- [x] CRUD de beneficiários com validação server-side via `zod`
+- [x] Revalidação de cache (`revalidatePath`) após mutações
+- [x] Tratamento de erros e toasts de feedback (constraints 23505/23503 traduzidas)
+- [x] Respeito à RLS em todas as queries — anon key no cliente, service role key apenas em `auth.admin.*`
+- [x] Paginação e busca server-side via `searchParams`
+- [x] `BeneficiarioDetailClient` extraído; histórico de atendimentos com joins reais
+- [x] `lib/supabase/admin.ts` com `createAdminClient` para operações de gestão de usuários
+- [x] Estado de busca/paginação sincronizado via `useSearchParams`
 
 **Commit final:** `feat(m9): integração dos cadastros e beneficiários com Supabase`
 
