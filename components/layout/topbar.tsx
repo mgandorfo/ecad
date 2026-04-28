@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -39,6 +42,8 @@ interface TopbarProps {
 
 export function Topbar({ user, mobileSidebar }: TopbarProps) {
   const { theme, setTheme } = useTheme();
+  const [signingOut, startSignOut] = useTransition();
+  const router = useRouter();
 
   const initials = user.nome
     .split(" ")
@@ -49,7 +54,7 @@ export function Topbar({ user, mobileSidebar }: TopbarProps) {
     .toUpperCase();
 
   return (
-    <header className="flex items-center h-14 border-b bg-background shrink-0 px-4 gap-3">
+    <header className="flex items-center h-14 border-b border-border/80 bg-background/95 backdrop-blur-sm shrink-0 px-4 gap-3">
       {mobileSidebar && (
         <div className="md:hidden shrink-0">{mobileSidebar}</div>
       )}
@@ -82,32 +87,39 @@ export function Topbar({ user, mobileSidebar }: TopbarProps) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="pb-2">
-              <div className="font-semibold text-sm truncate">{user.nome}</div>
-              <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
-              <Badge
-                className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="pb-2">
+                <div className="font-semibold text-sm truncate">{user.nome}</div>
+                <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
+                <Badge
+                  className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+                >
+                  {roleLabels[user.role]}
+                </Badge>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => router.push("/perfil")}>
+                <User className="size-4 mr-2 text-muted-foreground" />
+                Meu Perfil
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={signingOut}
+                onClick={() => startSignOut(() => { void signOut(); })}
               >
-                {roleLabels[user.role]}
-              </Badge>
-            </DropdownMenuLabel>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem render={<Link href="/perfil" />}>
-              <User className="size-4 mr-2 text-muted-foreground" />
-              Meu Perfil
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => signOut()}
-            >
-              <LogOut className="size-4 mr-2" />
-              Sair
-            </DropdownMenuItem>
+                <LogOut className="size-4 mr-2" />
+                {signingOut ? "Saindo…" : "Sair"}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

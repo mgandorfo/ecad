@@ -13,6 +13,11 @@ const redirectByRole: Record<Role, string> = {
   vigilancia: "/relatorios",
 };
 
+const VALID_ROLES: Role[] = ["admin", "entrevistador", "recepcionista", "vigilancia"];
+function isValidRole(r: unknown): r is Role {
+  return VALID_ROLES.includes(r as Role);
+}
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
@@ -51,22 +56,31 @@ export async function signIn(
   }
 
   // Se não houver admin algum no sistema → onboarding do primeiro admin
-  const { data: primeiroAdminPendente } = await supabase
+  const { data: primeiroAdminPendente, error: rpcError } = await supabase
     .rpc("primeiro_admin_pendente");
 
-  if (primeiroAdminPendente) {
+  if (rpcError) {
+    console.error("[signIn] primeiro_admin_pendente RPC error:", rpcError.message);
+  }
+
+  if (!rpcError && primeiroAdminPendente) {
     redirect("/onboarding");
   }
 
   // Buscar role do usuário recém-autenticado para redirecionar corretamente
   const { data: { user: authUser } } = await supabase.auth.getUser();
+
+  if (!authUser) {
+    return { error: "Sessão inválida. Tente novamente." };
+  }
+
   const { data: perfil } = await supabase
     .from("perfis")
     .select("role")
-    .eq("id", authUser!.id)
+    .eq("id", authUser.id)
     .single();
 
-  const destino = perfil?.role ? redirectByRole[perfil.role as Role] : "/dashboard";
+  const destino = isValidRole(perfil?.role) ? redirectByRole[perfil.role] : "/dashboard";
   redirect(destino);
 }
 

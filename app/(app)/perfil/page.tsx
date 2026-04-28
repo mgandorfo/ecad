@@ -1,18 +1,26 @@
+import { getRequiredUser } from "@/lib/supabase/auth";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { mockUsuarios } from "@/lib/mocks/usuarios";
+import type { Role } from "@/lib/types";
 
-const roleLabels: Record<string, string> = {
+const roleLabels: Record<Role, string> = {
   admin: "Administrador",
   entrevistador: "Entrevistador",
   recepcionista: "Recepcionista",
   vigilancia: "Vigilância",
 };
 
-export default function PerfilPage() {
-  const user = mockUsuarios[0];
+const roleColors: Record<Role, string> = {
+  admin: "bg-destructive/15 text-destructive border-destructive/20",
+  entrevistador: "bg-primary/15 text-primary border-primary/20",
+  recepcionista: "bg-chart-3/15 text-chart-3 border-chart-3/20",
+  vigilancia: "bg-muted text-muted-foreground border-border",
+};
+
+export default async function PerfilPage() {
+  const user = await getRequiredUser();
 
   const initials = user.nome
     .split(" ")
@@ -40,7 +48,9 @@ export default function PerfilPage() {
             <div>
               <p className="font-semibold">{user.nome}</p>
               <p className="text-sm text-muted-foreground">{user.email}</p>
-              <Badge className="mt-1 text-xs" variant="secondary">
+              <Badge
+                className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+              >
                 {roleLabels[user.role]}
               </Badge>
             </div>
@@ -48,22 +58,14 @@ export default function PerfilPage() {
 
           <div className="grid gap-3 pt-2 border-t text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <span className={user.ativo ? "text-chart-3 font-medium" : "text-muted-foreground"}>
-                {user.ativo ? "Ativo" : "Inativo"}
-              </span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-muted-foreground">Membro desde</span>
-              <span>{new Date(user.criado_em).toLocaleDateString("pt-BR")}</span>
+              <span>
+                {new Date(user.criado_em).toLocaleDateString("pt-BR")}
+              </span>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Edição de perfil disponível após integração com autenticação (Milestone 8).
-      </p>
     </div>
   );
 }

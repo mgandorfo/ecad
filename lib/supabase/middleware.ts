@@ -6,6 +6,10 @@ const PUBLIC_PATHS = ["/login", "/recuperar", "/redefinir", "/auth/callback"];
 // Rotas que exigem sessão mas não redirecionam usuário logado para /dashboard
 const AUTH_ONLY_PATHS = ["/onboarding"];
 
+function matchesPath(pathname: string, paths: string[]) {
+  return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -36,11 +40,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isPublic =
-    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) || pathname === "/";
-  const isAuthOnly = AUTH_ONLY_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic = matchesPath(pathname, PUBLIC_PATHS) || pathname === "/";
+  const isAuthOnly = matchesPath(pathname, AUTH_ONLY_PATHS);
 
-  // Sem sessão em rota protegida (app + onboarding) → /login
+  // Sem sessão em rota protegida → /login
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -48,15 +51,22 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Com sessão tentando acessar /login → /dashboard
-  // (não redireciona de /onboarding para evitar loop)
-  if (user && pathname === "/login") {
+  if (user && pathname.startsWith("/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
-  // isAuthOnly: precisa de sessão mas não faz redirect de volta ao /dashboard
-  void isAuthOnly;
+  // Com sessão em /onboarding: verifica se onboarding ainda é necessário
+  if (user && isAuthOnly) {
+    const { data: pendente, error } = await supabase.rpc("primeiro_admin_pendente");
+    if (!error && !pendente) {
+      // Onboarding concluído — redireciona para o app
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
 
   return supabaseResponse;
 }
