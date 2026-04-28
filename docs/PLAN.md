@@ -248,18 +248,19 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 12 — Onboarding, Polish & Acessibilidade
 
-**Branch:** `feat/m12-polish`
+**Branch:** `feat/m12-polish` ✅ mergeada em `master`
 **Objetivo:** refino final antes do deploy.
 
 **Entregas:**
-- [ ] Onboarding do primeiro admin (fluxo inicial se não houver admin no sistema)
-- [ ] Tour/tooltips nas principais telas
-- [ ] Revisão de acessibilidade (foco, aria, contraste)
-- [ ] Revisão de responsividade mobile
-- [ ] Estados de erro e vazio em todas as telas
-- [ ] 404 e 500 customizadas
-- [ ] Metadata/SEO da landing
-- [ ] Favicon e PWA básico (opcional)
+- [x] Onboarding do primeiro admin revisado — `role="alert"` no erro, race condition coberta
+- [x] Tooltips nas ações principais: alternar tema, "Assumir", exportar CSV e PDF
+- [x] Revisão de acessibilidade: skip-link, `aria-current` nos links ativos, `aria-hidden` em ícones decorativos, `tabIndex`+`onKeyDown` em linhas clicáveis, `htmlFor` em todos os labels, `aria-label` no campo de busca, `role="alert"` nos feedbacks de erro de login
+- [x] Revisão de responsividade mobile: `overflow-x-auto` em todas as tabelas densas, `PageHeader` com `flex-col` em telas pequenas
+- [x] Componentes `EmptyState` e `ErrorState` reutilizáveis aplicados em todos os CRUDs admin, beneficiários, fila, meus atendimentos e relatórios
+- [x] `not-found.tsx` (404) e error boundaries `error.tsx` / `(app)/error.tsx` com identidade visual do E-CAD
+- [x] Metadata com Open Graph, template de título, `keywords`, `authors` e `robots: noindex` (sistema interno)
+- [x] PWA básico: `public/manifest.json` e `public/favicon.svg`
+- [x] Remoção de `postcss.config.mjs` obsoleto (Tailwind v4 não necessita)
 
 **Commit final:** `feat(m12): polish, onboarding e acessibilidade`
 
