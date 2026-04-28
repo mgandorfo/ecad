@@ -9,28 +9,17 @@ import { BeneficiarioGuard } from "@/components/beneficiarios/beneficiario-guard
 import { BeneficiarioForm, type BeneficiarioFormData } from "@/components/beneficiarios/beneficiario-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
-import { mockBeneficiarios } from "@/lib/mocks";
+import { criarBeneficiario } from "../actions";
 
 export default function NovoBeneficiarioPage() {
   const router = useRouter();
 
   async function handleSave(data: BeneficiarioFormData) {
-    await new Promise((r) => setTimeout(r, 500));
-    const id = `b${Date.now()}`;
-    mockBeneficiarios.unshift({
-      id,
-      nome: data.nome,
-      cpf: data.cpf,
-      logradouro: data.logradouro,
-      numero: data.numero,
-      complemento: data.complemento,
-      bairro: data.bairro,
-      cidade: data.cidade,
-      uf: data.uf,
-      cep: data.cep,
-      criado_em: new Date().toISOString(),
-      atualizado_em: new Date().toISOString(),
-    });
+    const result = await criarBeneficiario(data);
+    if (!result.ok) {
+      toast.error(result.error);
+      throw new Error(result.error);
+    }
     toast.success("Beneficiário cadastrado com sucesso.");
     router.push("/beneficiarios");
   }

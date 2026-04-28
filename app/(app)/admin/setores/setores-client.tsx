@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
-import { mockSetores } from "@/lib/mocks";
 import type { Setor } from "@/lib/types";
+import { criarSetor, atualizarSetor, excluirSetor } from "./actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
 
@@ -41,10 +41,14 @@ type FormData = z.infer<typeof schema>;
 
 const PAGE_SIZE = 10;
 
-export function SetoresClient() {
-  const [items, setItems] = useState<Setor[]>(mockSetores);
-  const [loading] = useState(false);
-  const [saving, setSaving] = useState(false);
+interface Props {
+  initialItems: Setor[];
+  initialTotal: number;
+}
+
+export function SetoresClient({ initialItems, initialTotal }: Props) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,18 +59,7 @@ export function SetoresClient() {
     resolver: zodResolver(schema),
   });
 
-  const filtered = useMemo(
-    () =>
-      items.filter(
-        (s) =>
-          s.nome.toLowerCase().includes(search.toLowerCase()) ||
-          s.codigo.toLowerCase().includes(search.toLowerCase())
-      ),
-    [items, search]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(initialTotal / PAGE_SIZE));
 
   function openCreate() {
     setEditing(null);
@@ -81,45 +74,65 @@ export function SetoresClient() {
   }
 
   function handleDialogClose(open: boolean) {
-    if (!open && !saving) {
+    if (!open && !isPending) {
       setDialogOpen(false);
       setEditing(null);
       reset({ codigo: "", nome: "" });
     }
   }
 
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (value) params.set("q", value);
+      params.set("page", "1");
+      router.replace(`/admin/setores?${params.toString()}`);
+    });
+  }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (search) params.set("q", search);
+      params.set("page", String(newPage));
+      router.replace(`/admin/setores?${params.toString()}`);
+    });
+  }
+
   async function onSubmit(data: FormData) {
-    setSaving(true);
-    try {
-      await new Promise((r) => setTimeout(r, 400));
-      if (editing) {
-        setItems((prev) =>
-          prev.map((s) => (s.id === editing.id ? { ...s, ...data } : s))
-        );
-        toast.success("Setor atualizado com sucesso.");
-      } else {
-        const newItem: Setor = {
-          id: `s${Date.now()}`,
-          codigo: data.codigo,
-          nome: data.nome,
-          ativo: true,
-        };
-        setItems((prev) => [newItem, ...prev]);
-        toast.success("Setor criado com sucesso.");
+    startTransition(async () => {
+      const result = editing
+        ? await atualizarSetor(editing.id, data)
+        : await criarSetor(data);
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
+
+      toast.success(editing ? "Setor atualizado com sucesso." : "Setor criado com sucesso.");
       setDialogOpen(false);
       setEditing(null);
       reset({ codigo: "", nome: "" });
-    } finally {
-      setSaving(false);
-    }
+      router.refresh();
+    });
   }
 
   function handleDelete() {
     if (!deleteTarget) return;
-    setItems((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-    toast.success("Setor excluído.");
-    setDeleteTarget(null);
+    startTransition(async () => {
+      const result = await excluirSetor(deleteTarget.id);
+      if (!result.ok) {
+        toast.error(result.error);
+      } else {
+        toast.success("Setor excluído.");
+        router.refresh();
+      }
+      setDeleteTarget(null);
+    });
   }
 
   return (
@@ -141,110 +154,71 @@ export function SetoresClient() {
           placeholder="Buscar por código ou nome..."
           className="pl-8"
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => handleSearchChange(e.target.value)}
         />
       </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-10" />
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {initialItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
+                  {search ? "Nenhum setor encontrado para a busca." : "Nenhum setor cadastrado."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              initialItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-mono font-medium">{item.codigo}</TableCell>
+                  <TableCell>{item.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.ativo ? "default" : "outline"}>
+                      {item.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RowActions
+                      onEdit={() => openEdit(item)}
+                      onDelete={() => setDeleteTarget(item)}
+                    />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginated.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center text-muted-foreground py-10"
-                    >
-                      {search
-                        ? "Nenhum setor encontrado para a busca."
-                        : "Nenhum setor cadastrado."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginated.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono font-medium">
-                        {item.codigo}
-                      </TableCell>
-                      <TableCell>{item.nome}</TableCell>
-                      <TableCell>
-                        <Badge variant={item.ativo ? "default" : "outline"}>
-                          {item.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <RowActions
-                          onEdit={() => openEdit(item)}
-                          onDelete={() => setDeleteTarget(item)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                {filtered.length} setor{filtered.length !== 1 ? "es" : ""}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Anterior
-                </Button>
-                <span>
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Próximo
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{initialTotal} setor{initialTotal !== 1 ? "es" : ""}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page === 1 || isPending} onClick={() => handlePageChange(page - 1)}>
+              Anterior
+            </Button>
+            <span>{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page === totalPages || isPending} onClick={() => handlePageChange(page + 1)}>
+              Próximo
+            </Button>
+          </div>
+        </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar setor" : "Novo setor"}
-            </DialogTitle>
+            <DialogTitle>{editing ? "Editar setor" : "Novo setor"}</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="codigo">Código</Label>
               <Input
@@ -253,11 +227,7 @@ export function SetoresClient() {
                 placeholder="Ex: BPC"
                 aria-invalid={!!errors.codigo}
               />
-              {errors.codigo && (
-                <p className="text-xs text-destructive">
-                  {errors.codigo.message}
-                </p>
-              )}
+              {errors.codigo && <p className="text-xs text-destructive">{errors.codigo.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nome">Nome</Label>
@@ -267,23 +237,14 @@ export function SetoresClient() {
                 placeholder="Ex: BPC - Benefício de Prestação Continuada"
                 aria-invalid={!!errors.nome}
               />
-              {errors.nome && (
-                <p className="text-xs text-destructive">
-                  {errors.nome.message}
-                </p>
-              )}
+              {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => handleDialogClose(false)}
-              >
+              <Button type="button" variant="outline" disabled={isPending} onClick={() => handleDialogClose(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2Icon className="animate-spin" />}
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2Icon className="animate-spin" />}
                 {editing ? "Salvar alterações" : "Criar setor"}
               </Button>
             </DialogFooter>
@@ -293,9 +254,7 @@ export function SetoresClient() {
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => {
-          if (!o) setDeleteTarget(null);
-        }}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
         onConfirm={handleDelete}
         itemName={deleteTarget?.nome}
       />
