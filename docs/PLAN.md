@@ -228,18 +228,21 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 11 — Dashboard & Relatórios Reais
 
-**Branch:** `feat/m11-analytics-integration`
+**Branch:** `feat/m11-analytics-integration` ✅ mergeada em `master`
 **Objetivo:** dados reais nos gráficos e relatórios.
 
 **Entregas:**
-- [ ] Views/RPCs no Supabase para agregações (por dia, setor, serviço, status)
-- [ ] KPIs calculados server-side
-- [ ] Filtros server-side no relatório
-- [ ] Exportação CSV server-side (stream)
-- [ ] Exportação PDF (avaliar `@react-pdf/renderer` se necessário)
-- [ ] Respeito à visibilidade por role nas queries analíticas
+- [x] Views/RPCs no Supabase para agregações (por dia, setor, serviço, status) — migrations `20260428000002` e `20260428000003`
+- [x] KPIs calculados server-side via RPC `kpis_dashboard` (total, em espera, concluídos, tempo médio)
+- [x] Filtros server-side no relatório — paginação 50/página via `searchParams`, busca sanitizada
+- [x] Exportação CSV client-side com aviso quando há mais registros que a página atual
+- [x] Exportação PDF via `@react-pdf/renderer` — Route Handler `/api/relatorios/pdf`, layout A4 landscape, limite 5000 registros
+- [x] Respeito à visibilidade por role nas queries analíticas — entrevistador vê só os próprios; guard server-side bloqueia recepcionista
+- [x] Filtros do dashboard e relatórios sincronizados via URL (compartilháveis)
+- [x] Remoção de todos os mocks de dashboard e relatórios (`lib/mocks/` não usado nessas rotas)
+- [x] Code review pós-implementação: erros silenciados, lógica de KPI, GRANT na view, sanitização de busca, labels nos selects corrigidos
 
-**Commit final:** `feat(m11): dashboard e relatórios integrados`
+**Commit final:** `feat(m11): dashboard e relatórios integrados com dados reais, PDF e code review`
 
 ---
 
