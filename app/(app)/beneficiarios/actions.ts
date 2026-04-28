@@ -33,6 +33,7 @@ export async function listarBeneficiarios(
   pageSize = 10
 ): Promise<{ items: Beneficiario[]; total: number }> {
   const supabase = await createClient();
+  // autenticação garantida pelo RLS — createClient() já valida a sessão SSR
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 

@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { Atendimento, Setor, Perfil, Role } from "@/lib/types";
-import {
-  filtrarPorPeriodo,
-  filtrarPorSetor,
-  filtrarPorServidor,
-  calcularKPIs,
-  agruparPorDia,
-  agruparPorSetor,
-  agruparPorServico,
-  agruparPorStatus,
-  type Periodo,
-} from "@/lib/dashboard-utils";
+import { useRouter, usePathname } from "next/navigation";
+import type { Role } from "@/lib/types";
+import type { DashboardData } from "@/app/(app)/dashboard/actions";
+import type { Periodo } from "@/lib/dashboard-utils";
 import {
   Select,
   SelectContent,
@@ -27,56 +18,60 @@ import { ChartPorSetor } from "./chart-por-setor";
 import { ChartPorServico } from "./chart-por-servico";
 import { ChartPorStatus } from "./chart-por-status";
 
+interface SetorBasico { id: string; nome: string }
+interface ServidorBasico { id: string; nome: string }
+
 interface DashboardClientProps {
-  atendimentos: Atendimento[];
-  setores: Setor[];
-  servidores: Perfil[];
+  dashboardData: DashboardData;
+  setores: SetorBasico[];
+  servidores: ServidorBasico[];
   role: Role;
   servidorAtualId: string;
+  periodo: Periodo;
+  setorId: string;
+  servidorId: string;
 }
 
+const PERIODOS: Record<string, string> = {
+  "7d": "Últimos 7 dias",
+  "30d": "Últimos 30 dias",
+  "mes": "Este mês",
+};
+
 export function DashboardClient({
-  atendimentos,
+  dashboardData,
   setores,
   servidores,
   role,
-  servidorAtualId,
+  periodo,
+  setorId,
+  servidorId,
 }: DashboardClientProps) {
-  const [periodo, setPeriodo] = useState<Periodo>("7d");
-  const [setorId, setSetorId] = useState("");
-  const [servidorId, setServidorId] = useState(
-    role === "entrevistador" ? servidorAtualId : ""
-  );
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const temFiltroAtivo = setorId !== "" || (role !== "entrevistador" && servidorId !== "");
-
-  function limparFiltros() {
-    setSetorId("");
-    if (role !== "entrevistador") setServidorId("");
+  function push(params: Record<string, string>) {
+    const sp = new URLSearchParams({ periodo, setor: setorId, servidor: servidorId, ...params });
+    for (const [k, v] of Array.from(sp.entries())) {
+      if (!v) sp.delete(k);
+    }
+    router.push(`${pathname}?${sp.toString()}`);
   }
 
-  const filtrados = useMemo(() => {
-    let lista = filtrarPorPeriodo(atendimentos, periodo);
-    lista = filtrarPorSetor(lista, setorId);
-    lista = filtrarPorServidor(lista, servidorId);
-    return lista;
-  }, [atendimentos, periodo, setorId, servidorId]);
-
-  const kpis = useMemo(() => calcularKPIs(filtrados), [filtrados]);
-  const porDia = useMemo(() => agruparPorDia(filtrados, periodo), [filtrados, periodo]);
-  const porSetor = useMemo(() => agruparPorSetor(filtrados), [filtrados]);
-  const porServico = useMemo(() => agruparPorServico(filtrados), [filtrados]);
-  const porStatus = useMemo(() => agruparPorStatus(filtrados), [filtrados]);
-
+  const temFiltroAtivo = setorId !== "" || (role !== "entrevistador" && servidorId !== "");
   const podeVerServidor = role === "admin" || role === "vigilancia";
+
+  const setorNome = setores.find((s) => s.id === setorId)?.nome ?? "Todos os setores";
+  const servidorNome = servidores.find((s) => s.id === servidorId)?.nome ?? "Todos os servidores";
+
+  const { kpis, porDia, porSetor, porServico, porStatus } = dashboardData;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Filtros */}
       <div className="flex flex-wrap gap-3">
-        <Select value={periodo} onValueChange={(v) => { if (v !== null) setPeriodo(v as Periodo); }}>
+        <Select value={periodo} onValueChange={(v) => { if (v) push({ periodo: v }); }}>
           <SelectTrigger className="w-40">
-            <SelectValue />
+            <SelectValue>{PERIODOS[periodo] ?? periodo}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Últimos 7 dias</SelectItem>
@@ -85,44 +80,51 @@ export function DashboardClient({
           </SelectContent>
         </Select>
 
-        <Select value={setorId} onValueChange={(v) => { if (v !== null) setSetorId(v); }}>
+        <Select
+          value={setorId || null}
+          onValueChange={(v) => push({ setor: v ?? "" })}
+        >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Todos os setores" />
+            <SelectValue>{setorNome}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os setores</SelectItem>
+            <SelectItem value={null}>Todos os setores</SelectItem>
             {setores.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.nome}
-              </SelectItem>
+              <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {podeVerServidor && (
-          <Select value={servidorId} onValueChange={(v) => { if (v !== null) setServidorId(v); }}>
+          <Select
+            value={servidorId || null}
+            onValueChange={(v) => push({ servidor: v ?? "" })}
+          >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Todos os servidores" />
+              <SelectValue>{servidorNome}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os servidores</SelectItem>
+              <SelectItem value={null}>Todos os servidores</SelectItem>
               {servidores.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.nome}
-                </SelectItem>
+                <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
 
         {temFiltroAtivo && (
-          <Button variant="ghost" size="sm" onClick={limparFiltros}>
+          <Button variant="ghost" size="sm" onClick={() => push({ setor: "", servidor: "" })}>
             Limpar filtros
           </Button>
         )}
       </div>
 
-      <KPICards {...kpis} />
+      <KPICards
+        total={kpis.total}
+        emEspera={kpis.emEspera}
+        concluidos={kpis.concluidos}
+        tempoMedio={kpis.tempoMedio}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartPorDia data={porDia} />

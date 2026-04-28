@@ -14,7 +14,7 @@ interface AppShellProps {
 export function AppShell({ user, children }: AppShellProps) {
   return (
     <RoleProvider role={user.role}>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-dvh overflow-hidden bg-background">
         <div className="hidden md:flex">
           <Sidebar role={user.role} />
         </div>
