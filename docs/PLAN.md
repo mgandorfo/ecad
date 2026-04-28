@@ -206,19 +206,23 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 10 — Integração Atendimentos & Fila
 
-**Branch:** `feat/m10-atendimentos-integration`
+**Branch:** `feat/m10-atendimentos-integration` ✅ mergeada em `master`
 **Objetivo:** fila real com realtime.
 
 **Entregas:**
-- [ ] Criação de atendimento persistida
-- [ ] Query da fila ordenada por prioridade + data
-- [ ] Ação "assumir atendimento" (transação + verificação de race condition)
-- [ ] Troca de status e conclusão persistidas
-- [ ] Supabase Realtime para atualizar fila em tempo real
-- [ ] Filtros e ordenação server-side
-- [ ] Audit fields (`created_at`, `updated_at`, `assumed_at`, `concluded_at`)
+- [x] Criação de atendimento persistida
+- [x] Query da fila ordenada por prioridade + data
+- [x] Ação "assumir atendimento" (UPDATE atômico — evita race condition)
+- [x] Troca de status e conclusão persistidas
+- [x] Supabase Realtime para atualizar fila em tempo real (`use-fila-realtime`)
+- [x] Filtros e ordenação server-side (setor, serviço)
+- [x] Audit fields (`criado_em`, `atualizado_em`, `assumido_em`, `concluido_em`)
+- [x] Ação admin: trocar entrevistador de um atendimento
+- [x] Autocomplete de beneficiários com busca real no Supabase (portal para escapar overflow)
+- [x] Correções Base UI Select: `items` prop + `value={x || null}` (controlled state)
+- [x] Correção `concluirAtendimento`: busca status por nome `ilike('conclu%')` em vez de `ordem DESC`
 
-**Commit final:** `feat(m10): integração de atendimentos e fila com realtime`
+**Commit final:** `feat(m10): integração de atendimentos e fila com Supabase e realtime`
 
 ---
 
