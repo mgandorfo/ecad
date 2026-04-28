@@ -50,8 +50,23 @@ export async function signIn(
     return { error: "Não foi possível entrar. Tente novamente." };
   }
 
-  const user = await getCurrentUser();
-  const destino = user?.role ? redirectByRole[user.role] : "/dashboard";
+  // Se não houver admin algum no sistema → onboarding do primeiro admin
+  const { data: primeiroAdminPendente } = await supabase
+    .rpc("primeiro_admin_pendente");
+
+  if (primeiroAdminPendente) {
+    redirect("/onboarding");
+  }
+
+  // Buscar role do usuário recém-autenticado para redirecionar corretamente
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("role")
+    .eq("id", authUser!.id)
+    .single();
+
+  const destino = perfil?.role ? redirectByRole[perfil.role as Role] : "/dashboard";
   redirect(destino);
 }
 

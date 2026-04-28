@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Rotas que não exigem sessão
 const PUBLIC_PATHS = ["/login", "/recuperar", "/redefinir", "/auth/callback"];
+// Rotas que exigem sessão mas não redirecionam usuário logado para /dashboard
+const AUTH_ONLY_PATHS = ["/onboarding"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -35,8 +38,9 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic =
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) || pathname === "/";
+  const isAuthOnly = AUTH_ONLY_PATHS.some((p) => pathname.startsWith(p));
 
-  // Sem sessão em rota protegida → /login
+  // Sem sessão em rota protegida (app + onboarding) → /login
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -44,11 +48,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Com sessão tentando acessar /login → /dashboard
+  // (não redireciona de /onboarding para evitar loop)
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
+
+  // isAuthOnly: precisa de sessão mas não faz redirect de volta ao /dashboard
+  void isAuthOnly;
 
   return supabaseResponse;
 }
