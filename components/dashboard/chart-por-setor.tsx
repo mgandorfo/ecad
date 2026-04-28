@@ -53,7 +53,7 @@ export function ChartPorSetor({ data }: ChartPorSetorProps) {
                 fontSize: "12px",
               }}
             />
-            <Bar dataKey="total" name="Atendimentos" fill="hsl(var(--chart-2))" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="total" name="Atendimentos" fill="#00BFD8" radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

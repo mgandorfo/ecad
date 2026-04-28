@@ -39,7 +39,7 @@ export function ChartPorDia({ data }: ChartPorDiaProps) {
                 fontSize: "12px",
               }}
             />
-            <Bar dataKey="total" name="Atendimentos" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="total" name="Atendimentos" fill="#00883A" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
