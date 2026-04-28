@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
-import { mockServicos, mockSetores } from "@/lib/mocks";
-import type { Servico } from "@/lib/types";
+import type { Servico, Setor } from "@/lib/types";
+import { criarServico, atualizarServico, excluirServico } from "./actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,15 +37,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
 
 const schema = z.object({
-  codigo: z
-    .string()
-    .min(1, "Código obrigatório")
-    .max(15, "Máximo 15 caracteres"),
+  codigo: z.string().min(1, "Código obrigatório").max(15, "Máximo 15 caracteres"),
   nome: z.string().min(1, "Nome obrigatório").max(100, "Máximo 100 caracteres"),
   setor_id: z.string().min(1, "Setor obrigatório"),
 });
@@ -52,39 +49,32 @@ type FormData = z.infer<typeof schema>;
 
 const PAGE_SIZE = 10;
 
-export function ServicosClient() {
-  const [items, setItems] = useState<Servico[]>(mockServicos);
-  const [loading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+interface Props {
+  initialItems: Servico[];
+  initialTotal: number;
+  setores: Setor[];
+}
+
+export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [page, setPage] = useState(parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Servico | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Servico | null>(null);
   const [setorId, setSetorId] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
-  const filtered = useMemo(
-    () =>
-      items.filter(
-        (s) =>
-          s.nome.toLowerCase().includes(search.toLowerCase()) ||
-          s.codigo.toLowerCase().includes(search.toLowerCase())
-      ),
-    [items, search]
-  );
+  const totalPages = Math.max(1, Math.ceil(initialTotal / PAGE_SIZE));
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  function getSetorNome(id: string) {
+    return setores.find((s) => s.id === id)?.nome ?? "—";
+  }
 
   function openCreate() {
     setEditing(null);
@@ -101,7 +91,7 @@ export function ServicosClient() {
   }
 
   function handleDialogClose(open: boolean) {
-    if (!open && !saving) {
+    if (!open && !isPending) {
       setDialogOpen(false);
       setEditing(null);
       setSetorId("");
@@ -109,44 +99,59 @@ export function ServicosClient() {
     }
   }
 
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (value) params.set("q", value);
+      params.set("page", "1");
+      router.replace(`/admin/servicos?${params.toString()}`);
+    });
+  }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (search) params.set("q", search);
+      params.set("page", String(newPage));
+      router.replace(`/admin/servicos?${params.toString()}`);
+    });
+  }
+
   async function onSubmit(data: FormData) {
-    setSaving(true);
-    try {
-      await new Promise((r) => setTimeout(r, 400));
-      if (editing) {
-        setItems((prev) =>
-          prev.map((s) => (s.id === editing.id ? { ...s, ...data } : s))
-        );
-        toast.success("Serviço atualizado com sucesso.");
-      } else {
-        const newItem: Servico = {
-          id: `sv${Date.now()}`,
-          codigo: data.codigo,
-          nome: data.nome,
-          setor_id: data.setor_id,
-          ativo: true,
-        };
-        setItems((prev) => [newItem, ...prev]);
-        toast.success("Serviço criado com sucesso.");
+    startTransition(async () => {
+      const result = editing
+        ? await atualizarServico(editing.id, data)
+        : await criarServico(data);
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
+
+      toast.success(editing ? "Serviço atualizado com sucesso." : "Serviço criado com sucesso.");
       setDialogOpen(false);
       setEditing(null);
       setSetorId("");
       reset({ codigo: "", nome: "", setor_id: "" });
-    } finally {
-      setSaving(false);
-    }
+      router.refresh();
+    });
   }
 
   function handleDelete() {
     if (!deleteTarget) return;
-    setItems((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-    toast.success("Serviço excluído.");
-    setDeleteTarget(null);
-  }
-
-  function getSetorNome(setor_id: string) {
-    return mockSetores.find((s) => s.id === setor_id)?.nome ?? "—";
+    startTransition(async () => {
+      const result = await excluirServico(deleteTarget.id);
+      if (!result.ok) {
+        toast.error(result.error);
+      } else {
+        toast.success("Serviço excluído.");
+        router.refresh();
+      }
+      setDeleteTarget(null);
+    });
   }
 
   return (
@@ -168,114 +173,73 @@ export function ServicosClient() {
           placeholder="Buscar por código ou nome..."
           className="pl-8"
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => handleSearchChange(e.target.value)}
         />
       </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Setor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-10" />
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Setor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {initialItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
+                  {search ? "Nenhum serviço encontrado para a busca." : "Nenhum serviço cadastrado."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              initialItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-mono font-medium">{item.codigo}</TableCell>
+                  <TableCell>{item.nome}</TableCell>
+                  <TableCell className="text-muted-foreground">{getSetorNome(item.setor_id)}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.ativo ? "default" : "outline"}>
+                      {item.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RowActions
+                      onEdit={() => openEdit(item)}
+                      onDelete={() => setDeleteTarget(item)}
+                    />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginated.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground py-10"
-                    >
-                      {search
-                        ? "Nenhum serviço encontrado para a busca."
-                        : "Nenhum serviço cadastrado."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginated.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono font-medium">
-                        {item.codigo}
-                      </TableCell>
-                      <TableCell>{item.nome}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {getSetorNome(item.setor_id)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={item.ativo ? "default" : "outline"}>
-                          {item.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <RowActions
-                          onEdit={() => openEdit(item)}
-                          onDelete={() => setDeleteTarget(item)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                {filtered.length} serviço{filtered.length !== 1 ? "s" : ""}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Anterior
-                </Button>
-                <span>
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Próximo
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{initialTotal} serviço{initialTotal !== 1 ? "s" : ""}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page === 1 || isPending} onClick={() => handlePageChange(page - 1)}>
+              Anterior
+            </Button>
+            <span>{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page === totalPages || isPending} onClick={() => handlePageChange(page + 1)}>
+              Próximo
+            </Button>
+          </div>
+        </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar serviço" : "Novo serviço"}
-            </DialogTitle>
+            <DialogTitle>{editing ? "Editar serviço" : "Novo serviço"}</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="s-codigo">Código</Label>
               <Input
@@ -284,11 +248,7 @@ export function ServicosClient() {
                 placeholder="Ex: CAD-INC"
                 aria-invalid={!!errors.codigo}
               />
-              {errors.codigo && (
-                <p className="text-xs text-destructive">
-                  {errors.codigo.message}
-                </p>
-              )}
+              {errors.codigo && <p className="text-xs text-destructive">{errors.codigo.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="s-nome">Nome</Label>
@@ -298,54 +258,35 @@ export function ServicosClient() {
                 placeholder="Ex: Inclusão no CadÚnico"
                 aria-invalid={!!errors.nome}
               />
-              {errors.nome && (
-                <p className="text-xs text-destructive">
-                  {errors.nome.message}
-                </p>
-              )}
+              {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Setor</Label>
-              <div className="w-full">
-                <Select
-                  value={setorId}
-                  onValueChange={(v) => {
-                    if (!v) return;
-                    setSetorId(v);
-                    setValue("setor_id", v, { shouldValidate: true });
-                  }}
-                >
-                  <SelectTrigger className="w-full" aria-invalid={!!errors.setor_id}>
-                    <SelectValue placeholder="Selecione o setor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockSetores
-                      .filter((s) => s.ativo)
-                      .map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.nome}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {errors.setor_id && (
-                <p className="text-xs text-destructive">
-                  {errors.setor_id.message}
-                </p>
-              )}
+              <Select
+                value={setorId}
+                onValueChange={(v) => {
+                  if (!v) return;
+                  setSetorId(v);
+                  setValue("setor_id", v, { shouldValidate: true });
+                }}
+              >
+                <SelectTrigger className="w-full" aria-invalid={!!errors.setor_id}>
+                  <SelectValue placeholder="Selecione o setor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {setores.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.setor_id && <p className="text-xs text-destructive">{errors.setor_id.message}</p>}
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => handleDialogClose(false)}
-              >
+              <Button type="button" variant="outline" disabled={isPending} onClick={() => handleDialogClose(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2Icon className="animate-spin" />}
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2Icon className="animate-spin" />}
                 {editing ? "Salvar alterações" : "Criar serviço"}
               </Button>
             </DialogFooter>
@@ -355,9 +296,7 @@ export function ServicosClient() {
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => {
-          if (!o) setDeleteTarget(null);
-        }}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
         onConfirm={handleDelete}
         itemName={deleteTarget?.nome}
       />
