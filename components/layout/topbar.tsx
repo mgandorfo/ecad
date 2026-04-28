@@ -1,20 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun, LogOut, User, FlaskConical } from "lucide-react";
+import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Breadcrumbs } from "./breadcrumbs";
+import { signOut } from "@/app/actions/auth";
 import type { Perfil, Role } from "@/lib/types";
 
 const roleLabels: Record<Role, string> = {
@@ -33,13 +37,13 @@ const roleColors: Record<Role, string> = {
 
 interface TopbarProps {
   user: Perfil;
-  devRole?: Role;
-  onDevRoleChange?: (role: Role) => void;
   mobileSidebar?: React.ReactNode;
 }
 
-export function Topbar({ user, devRole, onDevRoleChange, mobileSidebar }: TopbarProps) {
+export function Topbar({ user, mobileSidebar }: TopbarProps) {
   const { theme, setTheme } = useTheme();
+  const [signingOut, startSignOut] = useTransition();
+  const router = useRouter();
 
   const initials = user.nome
     .split(" ")
@@ -50,38 +54,16 @@ export function Topbar({ user, devRole, onDevRoleChange, mobileSidebar }: Topbar
     .toUpperCase();
 
   return (
-    <header className="flex items-center h-14 border-b bg-background shrink-0 px-4 gap-3">
-      {/* Hamburguer — visível só no mobile */}
+    <header className="flex items-center h-14 border-b border-border/80 bg-background/95 backdrop-blur-sm shrink-0 px-4 gap-3">
       {mobileSidebar && (
         <div className="md:hidden shrink-0">{mobileSidebar}</div>
       )}
 
-      {/* Breadcrumbs */}
       <div className="flex-1 min-w-0">
         <Breadcrumbs />
       </div>
 
-      {/* Ações da direita */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Seletor de role (dev only) */}
-        {onDevRoleChange && (
-          <div className="hidden sm:flex items-center gap-1.5 border border-dashed border-amber-500/50 rounded-md px-2 py-1 bg-amber-500/5">
-            <FlaskConical className="size-3 text-amber-500 shrink-0" />
-            <select
-              className="text-xs bg-transparent text-amber-600 dark:text-amber-400 outline-none cursor-pointer"
-              value={devRole}
-              onChange={(e) => onDevRoleChange(e.target.value as Role)}
-              title="Dev: trocar role simulado"
-            >
-              <option value="admin">Admin</option>
-              <option value="entrevistador">Entrevistador</option>
-              <option value="recepcionista">Recepcionista</option>
-              <option value="vigilancia">Vigilância</option>
-            </select>
-          </div>
-        )}
-
-        {/* Toggle de tema */}
         <Button
           variant="ghost"
           size="icon"
@@ -93,7 +75,6 @@ export function Topbar({ user, devRole, onDevRoleChange, mobileSidebar }: Topbar
           <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
 
-        {/* Menu do usuário */}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" size="icon" className="rounded-full size-9" />}
@@ -106,29 +87,39 @@ export function Topbar({ user, devRole, onDevRoleChange, mobileSidebar }: Topbar
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="pb-2">
-              <div className="font-semibold text-sm truncate">{user.nome}</div>
-              <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
-              <Badge
-                className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="pb-2">
+                <div className="font-semibold text-sm truncate">{user.nome}</div>
+                <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
+                <Badge
+                  className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+                >
+                  {roleLabels[user.role]}
+                </Badge>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => router.push("/perfil")}>
+                <User className="size-4 mr-2 text-muted-foreground" />
+                Meu Perfil
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={signingOut}
+                onClick={() => startSignOut(() => { void signOut(); })}
               >
-                {roleLabels[user.role]}
-              </Badge>
-            </DropdownMenuLabel>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem render={<Link href="/perfil" />}>
-              <User className="size-4 mr-2 text-muted-foreground" />
-              Meu Perfil
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem variant="destructive">
-              <LogOut className="size-4 mr-2" />
-              Sair
-            </DropdownMenuItem>
+                <LogOut className="size-4 mr-2" />
+                {signingOut ? "Saindo…" : "Sair"}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

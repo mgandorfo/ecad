@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import type { Role } from "@/lib/types";
 
-const RoleContext = createContext<Role>("admin");
+const RoleContext = createContext<Role | null>(null);
 
 export function RoleProvider({
   role,
@@ -16,5 +16,9 @@ export function RoleProvider({
 }
 
 export function useRole(): Role {
-  return useContext(RoleContext);
+  const role = useContext(RoleContext);
+  if (role === null) {
+    throw new Error("useRole deve ser usado dentro do AppShell");
+  }
+  return role;
 }

@@ -165,19 +165,22 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 8 — Integração Auth Real
 
-**Branch:** `feat/m8-auth-integration`
+**Branch:** `feat/m8-auth-integration` ✅ mergeada em `master`
 **Objetivo:** substituir auth mockada pelo Supabase Auth.
 
 **Entregas:**
-- [ ] Clients Supabase server/browser em `lib/supabase/`
-- [ ] [middleware.ts](middleware.ts) com refresh de sessão e proteção de rotas
-- [ ] Login, logout, recuperação e redefinição de senha via Supabase Auth
-- [ ] Helper `getCurrentUser()` + `getCurrentRole()` em Server Components
-- [ ] Remover seletor de role fake
-- [ ] `RoleGuard` real baseado em `profile.role`
-- [ ] Redirecionamentos pós-login por role
+- [x] Clients Supabase server/browser em `lib/supabase/`
+- [x] `proxy.ts` com refresh de sessão real (`updateSession`) e proteção de rotas
+- [x] Login, logout, recuperação e redefinição de senha via Supabase Auth
+- [x] Helper `getCurrentUser()` + `getCurrentRole()` em Server Components
+- [x] Removido seletor de role fake; `RoleContext` alimentado pelo perfil real
+- [x] `RoleGuard` real baseado em `profile.role` + server-side guard em `app/(app)/admin/layout.tsx`
+- [x] Redirecionamentos pós-login por role (`redirectByRole`)
+- [x] Onboarding do primeiro admin (`/onboarding` + RPC `primeiro_admin_pendente`)
+- [x] `/perfil` usa `getRequiredUser()` — sem mocks
+- [x] Correções de segurança: open redirect bloqueado, `RoleContext` default `null`, cast `as Role` substituído por type guard, grant `anon` revogado da RPC
 
-**Commit final:** `feat(m8): integração com Supabase Auth`
+**Commit final:** `feat(m8): integração com Supabase Auth — correções de segurança e UX`
 
 ---
 
