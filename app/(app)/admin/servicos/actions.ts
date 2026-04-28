@@ -33,7 +33,10 @@ export async function listarServicos(search = "", page = 1, pageSize = 10): Prom
 
   const { data, error, count } = await query.range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarServicos]", error.message);
+    throw new Error("Falha ao buscar serviços.");
+  }
   return { items: (data ?? []) as Servico[], total: count ?? 0 };
 }
 
@@ -45,7 +48,10 @@ export async function listarSetoresAtivos(): Promise<Setor[]> {
     .eq("ativo", true)
     .order("nome");
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarSetoresAtivos]", error.message);
+    throw new Error("Falha ao buscar setores.");
+  }
   return (data ?? []) as Setor[];
 }
 
@@ -64,7 +70,8 @@ export async function criarServico(raw: ServicoFormData): Promise<ActionResult<S
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um serviço com este código." };
-    return { ok: false, error: error.message };
+    console.error("[criarServico]", error.message);
+    return { ok: false, error: "Falha ao salvar serviço. Tente novamente." };
   }
 
   revalidatePath("/admin/servicos");
@@ -87,7 +94,8 @@ export async function atualizarServico(id: string, raw: ServicoFormData): Promis
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um serviço com este código." };
-    return { ok: false, error: error.message };
+    console.error("[atualizarServico]", error.message);
+    return { ok: false, error: "Falha ao atualizar serviço. Tente novamente." };
   }
 
   revalidatePath("/admin/servicos");
@@ -100,7 +108,8 @@ export async function excluirServico(id: string): Promise<ActionResult> {
 
   if (error) {
     if (error.code === "23503") return { ok: false, error: "Este serviço possui atendimentos vinculados e não pode ser excluído." };
-    return { ok: false, error: error.message };
+    console.error("[excluirServico]", error.message);
+    return { ok: false, error: "Falha ao excluir serviço. Tente novamente." };
   }
 
   revalidatePath("/admin/servicos");

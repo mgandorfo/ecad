@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarAuditoria } from "@/lib/supabase/audit";
+import { getRequiredUser } from "@/lib/supabase/auth";
 import type { Perfil, Role } from "@/lib/types";
 
 const updateSchema = z.object({
@@ -40,7 +42,10 @@ export async function listarUsuarios(search = "", page = 1, pageSize = 10): Prom
 
   const { data, error, count } = await query.range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarUsuarios]", error.message);
+    throw new Error("Falha ao buscar usuários.");
+  }
   return { items: (data ?? []) as Perfil[], total: count ?? 0 };
 }
 
@@ -75,7 +80,8 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
     if (authError.message.includes("already registered")) {
       return { ok: false, error: "Já existe um usuário com este e-mail." };
     }
-    return { ok: false, error: authError.message };
+    console.error("[convidarUsuario] auth", authError.message);
+    return { ok: false, error: "Falha ao criar usuário. Tente novamente." };
   }
 
   // Atualiza o perfil criado pelo trigger com o nome e role corretos (service role ignora RLS)
@@ -87,8 +93,18 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
     .single();
 
   if (perfilError) {
-    return { ok: false, error: perfilError.message };
+    console.error("[convidarUsuario] perfil", perfilError.message);
+    return { ok: false, error: "Usuário criado, mas falha ao configurar perfil. Contate o administrador." };
   }
+
+  const actor = await getRequiredUser();
+  await registrarAuditoria({
+    userId: actor.id,
+    action: "criar_usuario",
+    entity: "perfis",
+    entityId: authData.user.id,
+    payload: { email: parsed.data.email, role: parsed.data.role },
+  });
 
   revalidatePath("/admin/usuarios");
   return { ok: true, data: perfil as Perfil };
@@ -108,19 +124,42 @@ export async function atualizarUsuario(id: string, raw: UsuarioUpdateData): Prom
     .select()
     .single();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[atualizarUsuario]", error.message);
+    return { ok: false, error: "Falha ao atualizar usuário. Tente novamente." };
+  }
+
+  const actor = await getRequiredUser();
+  await registrarAuditoria({
+    userId: actor.id,
+    action: "alterar_role_usuario",
+    entity: "perfis",
+    entityId: id,
+    payload: { role: parsed.data.role },
+  });
 
   revalidatePath("/admin/usuarios");
   return { ok: true, data: data as Perfil };
 }
 
 export async function excluirUsuario(id: string): Promise<ActionResult> {
+  const actor = await getRequiredUser();
   const adminClient = createAdminClient();
 
   // Deleta o usuário do Auth (o trigger cuida da limpeza do perfil via CASCADE)
   const { error } = await adminClient.auth.admin.deleteUser(id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[excluirUsuario]", error.message);
+    return { ok: false, error: "Falha ao excluir usuário. Tente novamente." };
+  }
+
+  await registrarAuditoria({
+    userId: actor.id,
+    action: "excluir_usuario",
+    entity: "perfis",
+    entityId: id,
+  });
 
   revalidatePath("/admin/usuarios");
   return { ok: true, data: undefined };

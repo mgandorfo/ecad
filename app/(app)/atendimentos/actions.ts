@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getRequiredUser } from "@/lib/supabase/auth";
+import { registrarAuditoria } from "@/lib/supabase/audit";
 import type { Atendimento, Perfil, Setor, Servico, StatusAtendimento } from "@/lib/types";
 
 export type ActionResult<T = void> =
@@ -63,7 +64,10 @@ export async function getFilaAtendimentos(filtros?: {
   if (filtros?.servico_id) query = query.eq("servico_id", filtros.servico_id);
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[getFilaAtendimentos]", error.message);
+    throw new Error("Falha ao carregar fila de atendimentos.");
+  }
   return (data ?? []) as unknown as AtendimentoComJoins[];
 }
 
@@ -82,7 +86,10 @@ export async function getMeusAtendimentos(filtros?: {
   if (filtros?.status_id) query = query.eq("status_id", filtros.status_id);
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[getMeusAtendimentos]", error.message);
+    throw new Error("Falha ao carregar atendimentos.");
+  }
   return (data ?? []) as unknown as AtendimentoComJoins[];
 }
 
@@ -148,7 +155,10 @@ export async function criarAtendimento(
     .select("id")
     .single();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[criarAtendimento]", error.message);
+    return { ok: false, error: "Falha ao criar atendimento. Tente novamente." };
+  }
 
   revalidatePath("/atendimentos");
   return { ok: true, data: { id: data.id } };
@@ -192,8 +202,18 @@ export async function assumirAtendimento(id: string): Promise<ActionResult> {
     .select("id")
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[assumirAtendimento]", error.message);
+    return { ok: false, error: "Falha ao assumir atendimento. Tente novamente." };
+  }
   if (!data) return { ok: false, error: "Atendimento já foi assumido por outro servidor." };
+
+  await registrarAuditoria({
+    userId: user.id,
+    action: "assumir_atendimento",
+    entity: "atendimentos",
+    entityId: id,
+  });
 
   revalidatePath("/atendimentos");
   revalidatePath(`/atendimentos/${id}`);
@@ -235,7 +255,10 @@ export async function atualizarStatus(
     .update({ status_id })
     .eq("id", id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[atualizarStatus]", error.message);
+    return { ok: false, error: "Falha ao atualizar status. Tente novamente." };
+  }
 
   revalidatePath(`/atendimentos/${id}`);
   revalidatePath("/atendimentos");
@@ -280,7 +303,10 @@ export async function atualizarAnotacoes(
     .update({ anotacoes: anotacoes.trim() || null })
     .eq("id", id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[atualizarAnotacoes]", error.message);
+    return { ok: false, error: "Falha ao salvar anotações. Tente novamente." };
+  }
 
   revalidatePath(`/atendimentos/${id}`);
   return { ok: true, data: undefined };
@@ -329,7 +355,17 @@ export async function concluirAtendimento(id: string): Promise<ActionResult> {
     })
     .eq("id", id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[concluirAtendimento]", error.message);
+    return { ok: false, error: "Falha ao concluir atendimento. Tente novamente." };
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    action: "concluir_atendimento",
+    entity: "atendimentos",
+    entityId: id,
+  });
 
   revalidatePath(`/atendimentos/${id}`);
   revalidatePath("/atendimentos");
@@ -384,7 +420,18 @@ export async function trocarEntrevistador(
     })
     .eq("id", id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[trocarEntrevistador]", error.message);
+    return { ok: false, error: "Falha ao trocar entrevistador. Tente novamente." };
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    action: "trocar_entrevistador",
+    entity: "atendimentos",
+    entityId: id,
+    payload: { novo_servidor_id },
+  });
 
   revalidatePath(`/atendimentos/${id}`);
   revalidatePath("/atendimentos");

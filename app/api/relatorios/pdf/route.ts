@@ -9,6 +9,28 @@ import { format } from "date-fns";
 const PDF_MAX_ROWS = 5000;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Rate limit: 10 requisições por janela de 60 segundos por usuário
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60_000;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): { allowed: boolean; retryAfterMs: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return { allowed: true, retryAfterMs: 0 };
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, retryAfterMs: entry.resetAt - now };
+  }
+
+  entry.count += 1;
+  return { allowed: true, retryAfterMs: 0 };
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
@@ -19,6 +41,17 @@ export async function GET(request: NextRequest) {
 
   if (user.role === "recepcionista") {
     return new Response("Acesso negado", { status: 403 });
+  }
+
+  const { allowed, retryAfterMs } = checkRateLimit(user.id);
+  if (!allowed) {
+    return new Response("Muitas requisições. Aguarde antes de exportar novamente.", {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.ceil(retryAfterMs / 1000)),
+        "Content-Type": "text/plain; charset=utf-8",
+      },
+    });
   }
 
   const sp = request.nextUrl.searchParams;

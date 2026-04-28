@@ -53,7 +53,10 @@ export async function listarBeneficiarios(
 
   const { data, error, count } = await query.range(from, to);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[listarBeneficiarios]", error.message);
+    throw new Error("Falha ao buscar beneficiários.");
+  }
   return { items: (data ?? []) as Beneficiario[], total: count ?? 0 };
 }
 
@@ -95,7 +98,8 @@ export async function criarBeneficiario(raw: BeneficiarioFormData): Promise<Acti
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um beneficiário com este CPF." };
     if (error.code === "23514") return { ok: false, error: "CPF inválido." };
-    return { ok: false, error: error.message };
+    console.error("[criarBeneficiario]", error.message);
+    return { ok: false, error: "Falha ao salvar beneficiário. Tente novamente." };
   }
 
   revalidatePath("/beneficiarios");
@@ -130,7 +134,8 @@ export async function atualizarBeneficiario(id: string, raw: BeneficiarioFormDat
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Já existe um beneficiário com este CPF." };
     if (error.code === "23514") return { ok: false, error: "CPF inválido." };
-    return { ok: false, error: error.message };
+    console.error("[atualizarBeneficiario]", error.message);
+    return { ok: false, error: "Falha ao atualizar beneficiário. Tente novamente." };
   }
 
   revalidatePath("/beneficiarios");
@@ -144,7 +149,8 @@ export async function excluirBeneficiario(id: string): Promise<ActionResult> {
 
   if (error) {
     if (error.code === "23503") return { ok: false, error: "Este beneficiário possui atendimentos e não pode ser excluído." };
-    return { ok: false, error: error.message };
+    console.error("[excluirBeneficiario]", error.message);
+    return { ok: false, error: "Falha ao excluir beneficiário. Tente novamente." };
   }
 
   revalidatePath("/beneficiarios");
