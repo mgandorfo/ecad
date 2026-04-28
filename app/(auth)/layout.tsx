@@ -2,14 +2,14 @@ import { Logo } from "@/components/layout/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
+    <main id="main-content" className="min-h-dvh flex flex-col items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
       {/* Decoração de fundo sutil */}
       <div
         className="pointer-events-none absolute inset-0 -z-10"
         aria-hidden="true"
       >
         <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       <div className="w-full max-w-sm flex flex-col gap-8">
@@ -23,6 +23,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {children}
       </div>
-    </div>
+    </main>
   );
 }

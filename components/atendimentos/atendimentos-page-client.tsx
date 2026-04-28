@@ -10,6 +10,7 @@ import {
   ListChecksIcon,
   PlusIcon,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { assumirAtendimento } from "@/app/(app)/atendimentos/actions";
 import type { AtendimentoComJoins } from "@/app/(app)/atendimentos/actions";
@@ -51,6 +52,7 @@ import { PrioridadeBadge } from "@/components/atendimentos/prioridade-badge";
 import { TempoEspera } from "@/components/atendimentos/tempo-espera";
 import { NovoAtendimentoSheet } from "@/components/atendimentos/novo-atendimento-sheet";
 import { formatDateTime } from "@/lib/format";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AtendimentosPageClientProps {
   fila: AtendimentoComJoins[];
@@ -88,6 +90,7 @@ export function AtendimentosPageClient({
   useFilaRealtime();
 
   const setoresAtivos = setores.filter((s) => s.ativo);
+  const meusEmAndamento = meus.filter((a) => !a.concluido_em);
   const servicosFiltraveisNaFila =
     filterSetorId && filterSetorId !== "todos"
       ? servicos.filter((s) => s.setor_id === filterSetorId && s.ativo)
@@ -132,7 +135,7 @@ export function AtendimentosPageClient({
         actions={
           canCreate ? (
             <Button onClick={() => setSheetOpen(true)}>
-              <PlusIcon />
+              <PlusIcon aria-hidden="true" />
               Nova chegada
             </Button>
           ) : undefined
@@ -153,9 +156,9 @@ export function AtendimentosPageClient({
           <TabsTrigger value="meus">
             <ListChecksIcon className="size-4" />
             Meus Atendimentos
-            {meus.filter((a) => !a.concluido_em).length > 0 && (
+            {meusEmAndamento.length > 0 && (
               <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
-                {meus.filter((a) => !a.concluido_em).length}
+                {meusEmAndamento.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -210,7 +213,7 @@ export function AtendimentosPageClient({
             )}
           </div>
 
-          <div className="rounded-lg border">
+          <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -227,12 +230,12 @@ export function AtendimentosPageClient({
               <TableBody>
                 {fila.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={canAssume ? 8 : 7}
-                      className="py-14 text-center text-muted-foreground"
-                    >
-                      <ClipboardListIcon className="mx-auto mb-2 size-8 opacity-30" />
-                      Nenhum atendimento aguardando.
+                    <TableCell colSpan={canAssume ? 8 : 7} className="p-0">
+                      <EmptyState
+                        icon={<ClipboardListIcon className="size-5" />}
+                        title="Fila vazia"
+                        description="Nenhum atendimento aguardando no momento."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -240,7 +243,9 @@ export function AtendimentosPageClient({
                     <TableRow
                       key={a.id}
                       className="cursor-pointer"
+                      tabIndex={0}
                       onClick={() => router.push(`/atendimentos/${a.id}`)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/atendimentos/${a.id}`); } }}
                     >
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {index + 1}
@@ -269,16 +274,23 @@ export function AtendimentosPageClient({
                       </TableCell>
                       {canAssume && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5"
-                            disabled={isPending}
-                            onClick={() => setAssumirTarget(a)}
-                          >
-                            <UserCheckIcon className="size-3.5" />
-                            Assumir
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1.5"
+                                  disabled={isPending}
+                                  onClick={() => setAssumirTarget(a)}
+                                />
+                              }
+                            >
+                              <UserCheckIcon className="size-3.5" aria-hidden="true" />
+                              Assumir
+                            </TooltipTrigger>
+                            <TooltipContent>Assumir este atendimento e tornar-se responsável</TooltipContent>
+                          </Tooltip>
                         </TableCell>
                       )}
                     </TableRow>
@@ -326,12 +338,17 @@ export function AtendimentosPageClient({
           </div>
 
           {meus.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-              <ListChecksIcon className="size-10 opacity-30" />
-              <p className="text-sm">Nenhum atendimento encontrado.</p>
-            </div>
+            <EmptyState
+              icon={<ListChecksIcon className="size-5" />}
+              title="Nenhum atendimento"
+              description={
+                filterStatusId
+                  ? "Nenhum atendimento com o status selecionado."
+                  : "Você ainda não assumiu nenhum atendimento."
+              }
+            />
           ) : (
-            <div className="rounded-lg border">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -348,7 +365,9 @@ export function AtendimentosPageClient({
                     <TableRow
                       key={a.id}
                       className="cursor-pointer"
+                      tabIndex={0}
                       onClick={() => router.push(`/atendimentos/${a.id}`)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/atendimentos/${a.id}`); } }}
                     >
                       <TableCell>
                         <p className="font-medium">{a.beneficiario.nome}</p>

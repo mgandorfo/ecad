@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { FolderIcon, Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import type { Setor } from "@/lib/types";
 import { criarSetor, atualizarSetor, excluirSetor } from "./actions";
@@ -32,6 +32,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const schema = z.object({
   codigo: z.string().min(1, "Código obrigatório").max(10, "Máximo 10 caracteres"),
@@ -143,7 +144,7 @@ export function SetoresClient({ initialItems, initialTotal }: Props) {
         description="Gerenciamento de setores de atendimento"
         actions={
           <Button onClick={openCreate}>
-            <PlusIcon />
+            <PlusIcon aria-hidden="true" />
             Novo setor
           </Button>
         }
@@ -159,7 +160,7 @@ export function SetoresClient({ initialItems, initialTotal }: Props) {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -172,8 +173,12 @@ export function SetoresClient({ initialItems, initialTotal }: Props) {
           <TableBody>
             {initialItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
-                  {search ? "Nenhum setor encontrado para a busca." : "Nenhum setor cadastrado."}
+                <TableCell colSpan={4} className="p-0">
+                  <EmptyState
+                    icon={<FolderIcon className="size-5" />}
+                    title={search ? "Nenhum setor encontrado" : "Nenhum setor cadastrado"}
+                    description={search ? `Nenhum resultado para "${search}".` : 'Crie o primeiro setor clicando em "Novo setor".'}
+                  />
                 </TableCell>
               </TableRow>
             ) : (

@@ -20,6 +20,7 @@ import {
 import { Breadcrumbs } from "./breadcrumbs";
 import { signOut } from "@/app/actions/auth";
 import type { Perfil, Role } from "@/lib/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const roleLabels: Record<Role, string> = {
   admin: "Administrador",
@@ -64,16 +65,23 @@ export function Topbar({ user, mobileSidebar }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label="Alternar tema"
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                aria-label="Alternar tema"
+                className="text-muted-foreground hover:text-foreground"
+              />
+            }
+          >
+            <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </TooltipTrigger>
+          <TooltipContent>Alternar tema</TooltipContent>
+        </Tooltip>
 
         <DropdownMenu>
           <DropdownMenuTrigger

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PlusIcon, SearchIcon, UserIcon } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import type { Beneficiario } from "@/lib/types";
 import { excluirBeneficiario } from "@/app/(app)/beneficiarios/actions";
@@ -85,7 +86,7 @@ export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
         description="Cadastro e busca de beneficiários"
         actions={
           <Button onClick={() => router.push("/beneficiarios/novo")}>
-            <PlusIcon />
+            <PlusIcon aria-hidden="true" />
             Novo beneficiário
           </Button>
         }
@@ -101,7 +102,7 @@ export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -115,15 +116,26 @@ export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
           <TableBody>
             {initialItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                  {search ? (
-                    "Nenhum beneficiário encontrado para a busca."
-                  ) : (
-                    <span className="flex flex-col items-center gap-2">
-                      <UserIcon className="size-8 opacity-30" />
-                      Nenhum beneficiário cadastrado.
-                    </span>
-                  )}
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    icon={<UserIcon className="size-5" />}
+                    title={search ? "Nenhum beneficiário encontrado" : "Nenhum beneficiário cadastrado"}
+                    description={
+                      search
+                        ? `Nenhum resultado para "${search}".`
+                        : 'Cadastre o primeiro beneficiário clicando em "Novo beneficiário".'
+                    }
+                    action={
+                      !search ? (
+                        <button
+                          onClick={() => router.push("/beneficiarios/novo")}
+                          className="text-sm text-primary underline-offset-4 hover:underline"
+                        >
+                          Novo beneficiário
+                        </button>
+                      ) : undefined
+                    }
+                  />
                 </TableCell>
               </TableRow>
             ) : (
@@ -131,7 +143,9 @@ export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
                 <TableRow
                   key={b.id}
                   className="cursor-pointer"
+                  tabIndex={0}
                   onClick={() => router.push(`/beneficiarios/${b.id}`)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/beneficiarios/${b.id}`); } }}
                 >
                   <TableCell className="font-medium">{b.nome}</TableCell>
                   <TableCell className="font-mono text-sm">{formatCpf(b.cpf)}</TableCell>

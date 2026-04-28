@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon, WrenchIcon } from "lucide-react";
 
 import type { Servico, Setor } from "@/lib/types";
 import { criarServico, atualizarServico, excluirServico } from "./actions";
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const schema = z.object({
   codigo: z.string().min(1, "Código obrigatório").max(15, "Máximo 15 caracteres"),
@@ -161,7 +162,7 @@ export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
         description="Gerenciamento de serviços oferecidos"
         actions={
           <Button onClick={openCreate}>
-            <PlusIcon />
+            <PlusIcon aria-hidden="true" />
             Novo serviço
           </Button>
         }
@@ -177,7 +178,7 @@ export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -191,8 +192,12 @@ export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
           <TableBody>
             {initialItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                  {search ? "Nenhum serviço encontrado para a busca." : "Nenhum serviço cadastrado."}
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    icon={<WrenchIcon className="size-5" />}
+                    title={search ? "Nenhum serviço encontrado" : "Nenhum serviço cadastrado"}
+                    description={search ? `Nenhum resultado para "${search}".` : 'Crie o primeiro serviço clicando em "Novo serviço".'}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
