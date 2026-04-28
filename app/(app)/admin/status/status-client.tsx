@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { CircleDotIcon, Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import type { StatusAtendimento } from "@/lib/types";
 import { criarStatus, atualizarStatus, excluirStatus } from "./actions";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const schema = z.object({
   nome: z.string().min(1, "Nome obrigatório").max(60, "Máximo 60 caracteres"),
@@ -149,7 +150,7 @@ export function StatusClient({ initialItems, initialTotal }: Props) {
         description="Configuração dos status de atendimento"
         actions={
           <Button onClick={openCreate}>
-            <PlusIcon />
+            <PlusIcon aria-hidden="true" />
             Novo status
           </Button>
         }
@@ -165,7 +166,7 @@ export function StatusClient({ initialItems, initialTotal }: Props) {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -179,8 +180,12 @@ export function StatusClient({ initialItems, initialTotal }: Props) {
           <TableBody>
             {initialItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                  {search ? "Nenhum status encontrado para a busca." : "Nenhum status cadastrado."}
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    icon={<CircleDotIcon className="size-5" />}
+                    title={search ? "Nenhum status encontrado" : "Nenhum status cadastrado"}
+                    description={search ? `Nenhum resultado para "${search}".` : 'Crie o primeiro status clicando em "Novo status".'}
+                  />
                 </TableCell>
               </TableRow>
             ) : (

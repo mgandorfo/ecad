@@ -43,7 +43,7 @@ export default function OnboardingPage() {
               required
             />
             {state?.error && (
-              <p className="text-xs text-destructive">{state.error}</p>
+              <p role="alert" className="text-xs text-destructive">{state.error}</p>
             )}
           </div>
 

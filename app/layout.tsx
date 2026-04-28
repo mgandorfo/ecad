@@ -16,8 +16,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "E-CAD — Gestão de Atendimentos",
-  description: "Sistema de gestão de atendimentos do CAD para a Secretaria de Assistência Social de Caarapo - MS",
+  title: {
+    default: "E-CAD — Gestão de Atendimentos",
+    template: "%s | E-CAD",
+  },
+  description:
+    "Sistema de gestão de atendimentos do Cadastro Único (CadÚnico) para a Secretaria de Assistência Social de Caarapo - MS.",
+  keywords: ["CadÚnico", "atendimentos", "assistência social", "Caarapo", "E-CAD"],
+  authors: [{ name: "Prefeitura Municipal de Caarapo" }],
+  robots: { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    title: "E-CAD — Gestão de Atendimentos",
+    description:
+      "Sistema de gestão de atendimentos do Cadastro Único para a Secretaria de Assistência Social de Caarapo - MS.",
+    siteName: "E-CAD",
+  },
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import type { Perfil, Role } from "@/lib/types";
 import { convidarUsuario, atualizarUsuario, excluirUsuario } from "./actions";
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { RowActions } from "@/components/admin/row-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const ROLES: { value: Role; label: string }[] = [
   { value: "admin", label: "Administrador" },
@@ -194,7 +195,7 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
         description="Gerenciamento de usuários e perfis de acesso"
         actions={
           <Button onClick={openCreate}>
-            <PlusIcon />
+            <PlusIcon aria-hidden="true" />
             Novo usuário
           </Button>
         }
@@ -210,7 +211,7 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -224,8 +225,12 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
           <TableBody>
             {initialItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                  {search ? "Nenhum usuário encontrado para a busca." : "Nenhum usuário cadastrado."}
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    icon={<UsersIcon className="size-5" />}
+                    title={search ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                    description={search ? `Nenhum resultado para "${search}".` : 'Crie o primeiro usuário clicando em "Novo usuário".'}
+                  />
                 </TableCell>
               </TableRow>
             ) : (

@@ -6,7 +6,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 pb-2 border-b border-border/50">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 pb-2 border-b border-border/50">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {title}
@@ -16,7 +16,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-2 shrink-0">{actions}</div>
+        <div className="flex items-center gap-2 sm:shrink-0">{actions}</div>
       )}
     </div>
   );

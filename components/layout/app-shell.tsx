@@ -14,6 +14,12 @@ interface AppShellProps {
 export function AppShell({ user, children }: AppShellProps) {
   return (
     <RoleProvider role={user.role}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Pular para o conteúdo
+      </a>
       <div className="flex h-dvh overflow-hidden bg-background">
         <div className="hidden md:flex">
           <Sidebar role={user.role} />
@@ -24,7 +30,7 @@ export function AppShell({ user, children }: AppShellProps) {
             user={user}
             mobileSidebar={<MobileSidebar role={user.role} />}
           />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6">
             {children}
           </main>
         </div>

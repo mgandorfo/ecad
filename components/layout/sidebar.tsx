@@ -26,7 +26,7 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
         <Logo size="sm" />
       </div>
 
-      <nav className="flex flex-col flex-1 overflow-y-auto p-2 gap-0.5">
+      <nav aria-label="Navegação principal" className="flex flex-col flex-1 overflow-y-auto p-2 gap-0.5">
         {mainItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -40,6 +40,7 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 active
@@ -47,7 +48,7 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className={cn("size-4 shrink-0", active && "text-primary")} />
+              <Icon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden="true" />
               {item.label}
             </Link>
           );
@@ -68,6 +69,7 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                     active
@@ -75,7 +77,7 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
                       : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <Icon className={cn("size-4 shrink-0", active && "text-primary")} />
+                  <Icon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden="true" />
                   {item.label}
                 </Link>
               );

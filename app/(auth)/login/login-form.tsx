@@ -32,22 +32,22 @@ export function LoginForm() {
       <CardContent className="pt-0">
         <form action={action} className="flex flex-col gap-5">
           {redefinido && (
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2.5">
-              <CheckCircle2 className="size-4 shrink-0" />
+            <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2.5">
+              <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
               Senha redefinida com sucesso. Faça login.
             </div>
           )}
 
           {erroCb && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
-              <AlertCircle className="size-4 shrink-0" />
+            <div role="alert" className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
+              <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
               Link inválido ou expirado. Solicite um novo.
             </div>
           )}
 
           {state?.error && (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
-              <AlertCircle className="size-4 shrink-0" />
+            <div role="alert" aria-live="assertive" className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
+              <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
               {state.error}
             </div>
           )}

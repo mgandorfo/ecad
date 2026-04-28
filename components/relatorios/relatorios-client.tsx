@@ -25,7 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Search, X, FileText, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Download, Search, X, FileText, ChevronLeft, ChevronRight, Loader2, AlertCircle, FileSearchIcon } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
@@ -189,8 +191,9 @@ export function RelatoriosClient({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
           <Input
+            aria-label="Buscar por beneficiário ou CPF"
             placeholder="Buscar beneficiário ou CPF..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
@@ -200,12 +203,12 @@ export function RelatoriosClient({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">De</Label>
-          <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-40" />
+          <Label htmlFor="rel-data-inicio" className="text-xs text-muted-foreground">De</Label>
+          <Input id="rel-data-inicio" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-40" />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Até</Label>
-          <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-40" />
+          <Label htmlFor="rel-data-fim" className="text-xs text-muted-foreground">Até</Label>
+          <Input id="rel-data-fim" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-40" />
         </div>
 
         <Select value={setorId || null} onValueChange={(v) => setSetorId(v ?? "")}>
@@ -288,25 +291,33 @@ export function RelatoriosClient({
           {totalPages > 1 && ` — página ${currentPage} de ${totalPages}`}
         </p>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportarCSV}
-            className="gap-2"
-            title={
-              totalRegistros > PAGE_SIZE
-                ? `Exporta apenas os ${atendimentos.length} registros desta página. Use o PDF para exportar tudo.`
-                : undefined
-            }
-          >
-            <Download className="size-4" />
-            CSV
-            {totalRegistros > PAGE_SIZE && <AlertCircle className="size-3.5 text-yellow-500" />}
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportarPDF} className="gap-2">
-            <FileText className="size-4" />
-            PDF
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button variant="outline" size="sm" onClick={exportarCSV} className="gap-2" />
+              }
+            >
+              <Download className="size-4" aria-hidden="true" />
+              CSV
+              {totalRegistros > PAGE_SIZE && <AlertCircle className="size-3.5 text-yellow-500" aria-hidden="true" />}
+            </TooltipTrigger>
+            <TooltipContent>
+              {totalRegistros > PAGE_SIZE
+                ? `Exporta apenas os ${atendimentos.length} registros desta página. Use PDF para exportar tudo.`
+                : "Exportar como CSV"}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button variant="outline" size="sm" onClick={exportarPDF} className="gap-2" />
+              }
+            >
+              <FileText className="size-4" aria-hidden="true" />
+              PDF
+            </TooltipTrigger>
+            <TooltipContent>Exportar até 5.000 registros como PDF</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -328,8 +339,12 @@ export function RelatoriosClient({
           <TableBody>
             {atendimentos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                  Nenhum atendimento encontrado com os filtros aplicados.
+                <TableCell colSpan={8} className="p-0">
+                  <EmptyState
+                    icon={<FileSearchIcon className="size-5" />}
+                    title="Nenhum registro encontrado"
+                    description={temFiltroAtivo ? "Tente ajustar ou limpar os filtros." : "Não há atendimentos registrados ainda."}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
