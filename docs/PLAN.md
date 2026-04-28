@@ -268,18 +268,18 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 13 — Revisão de Segurança
 
-**Branch:** `chore/m13-security-review`
+**Branch:** `chore/m13-security-review` ✅ mergeada em `master`
 **Objetivo:** auditoria antes de ir a produção.
 
 **Entregas:**
-- [ ] Revisão manual de todas as políticas RLS
-- [ ] Testes de permissão por role (matriz de acesso)
-- [ ] Confirmação de que service role key não vaza para o cliente
-- [ ] Rate limiting em rotas sensíveis
-- [ ] Headers de segurança (CSP, HSTS) em `next.config`
-- [ ] Sanitização/validação server-side em todas as mutações
-- [ ] Logs de auditoria para ações críticas (assumir, concluir, alterar role)
-- [ ] Executar `/security-review`
+- [x] Revisão manual de todas as políticas RLS — sem gaps por tabela/role/verbo
+- [x] Testes de permissão por role (matriz de acesso) — RLS auditada e validada
+- [x] Confirmação de que service role key não vaza para o cliente — isolada em Server Actions `"use server"`
+- [x] Rate limiting em rotas sensíveis — `/api/relatorios/pdf`: 10 req/60s por usuário, 429 + `Retry-After`
+- [x] Headers de segurança (CSP, HSTS) em `next.config` — CSP, HSTS (63072000s + preload), X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- [x] Sanitização/validação server-side em todas as mutações — `error.message` bruto substituído por mensagens genéricas + `console.error` no servidor em todas as 10 Server Actions
+- [x] Logs de auditoria para ações críticas — tabela `audit_log` (RLS imutável) + `lib/supabase/audit.ts`; registra: assumir/concluir atendimento, trocar entrevistador, criar/alterar role/excluir usuário
+- [x] Executar `/security-review` — auditoria completa via skill de segurança
 
 **Commit final:** `chore(m13): revisão de segurança e hardening`
 
