@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -11,13 +11,11 @@ import {
   PlusIcon,
 } from "lucide-react";
 
-import { atendimentosStore } from "@/lib/stores/atendimentos";
-import { mockStatus } from "@/lib/mocks/status";
-import { mockSetores } from "@/lib/mocks/setores";
-import { mockServicos } from "@/lib/mocks/servicos";
-import { mockUsuarios } from "@/lib/mocks/usuarios";
-import type { Atendimento } from "@/lib/types";
+import { assumirAtendimento } from "@/app/(app)/atendimentos/actions";
+import type { AtendimentoComJoins } from "@/app/(app)/atendimentos/actions";
+import type { Setor, Servico, StatusAtendimento } from "@/lib/types";
 import { useRole } from "@/lib/role-context";
+import { useFilaRealtime } from "@/lib/hooks/use-fila-realtime";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -54,11 +52,27 @@ import { TempoEspera } from "@/components/atendimentos/tempo-espera";
 import { NovoAtendimentoSheet } from "@/components/atendimentos/novo-atendimento-sheet";
 import { formatDateTime } from "@/lib/format";
 
-const SERVIDOR_MOCK_ID = "u2";
-const STATUS_EM_ATENDIMENTO = mockStatus.find((s) => s.nome === "Em Atendimento") ?? mockStatus[1];
-const STATUS_AGUARDANDO_ID = mockStatus.find((s) => s.ordem === 1)?.id ?? "st1";
+interface AtendimentosPageClientProps {
+  fila: AtendimentoComJoins[];
+  meus: AtendimentoComJoins[];
+  setores: Setor[];
+  servicos: Servico[];
+  allStatus: StatusAtendimento[];
+  filterSetorId?: string;
+  filterServicoId?: string;
+  filterStatusId?: string;
+}
 
-export function AtendimentosPageClient() {
+export function AtendimentosPageClient({
+  fila,
+  meus,
+  setores,
+  servicos,
+  allStatus,
+  filterSetorId,
+  filterServicoId,
+  filterStatusId,
+}: AtendimentosPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = useRole();
@@ -66,64 +80,45 @@ export function AtendimentosPageClient() {
   const tabParam = searchParams.get("aba");
   const defaultTab = tabParam === "meus" ? "meus" : "fila";
 
-  const [atendimentos, setAtendimentos] = useState<Atendimento[]>(() => atendimentosStore.getAll());
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [assumirTarget, setAssumirTarget] = useState<Atendimento | null>(null);
+  const [assumirTarget, setAssumirTarget] = useState<AtendimentoComJoins | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  // Filtros fila
-  const [filterSetor, setFilterSetor] = useState("todos");
-  const [filterServico, setFilterServico] = useState("todos");
+  // Realtime: re-fetcha os dados quando a fila muda
+  useFilaRealtime();
 
-  // Filtro meus atendimentos
-  const [filterStatus, setFilterStatus] = useState("todos");
+  const setoresAtivos = setores.filter((s) => s.ativo);
+  const servicosFiltraveisNaFila =
+    filterSetorId && filterSetorId !== "todos"
+      ? servicos.filter((s) => s.setor_id === filterSetorId && s.ativo)
+      : servicos.filter((s) => s.ativo);
 
-  useEffect(() => {
-    return atendimentosStore.subscribe(() => {
-      setAtendimentos(atendimentosStore.getAll());
-    });
-  }, []);
-
-  const setoresAtivos = mockSetores.filter((s) => s.ativo);
-  const servicosFiltradosFila = useMemo(
-    () =>
-      filterSetor === "todos"
-        ? mockServicos.filter((s) => s.ativo)
-        : mockServicos.filter((s) => s.setor_id === filterSetor && s.ativo),
-    [filterSetor]
-  );
-
-  const fila = useMemo(() => {
-    return atendimentos
-      .filter((a) => {
-        if (a.status_id !== STATUS_AGUARDANDO_ID) return false;
-        if (filterSetor !== "todos" && a.setor_id !== filterSetor) return false;
-        if (filterServico !== "todos" && a.servico_id !== filterServico) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.prioritario !== b.prioritario) return a.prioritario ? -1 : 1;
-        return new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime();
-      });
-  }, [atendimentos, filterSetor, filterServico]);
-
-  const meus = useMemo(() => {
-    return atendimentos
-      .filter((a) => {
-        if (a.servidor_id !== SERVIDOR_MOCK_ID) return false;
-        if (filterStatus !== "todos" && a.status_id !== filterStatus) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.atualizado_em).getTime() - new Date(a.atualizado_em).getTime());
-  }, [atendimentos, filterStatus]);
+  function updateFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "todos") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    // Reseta serviço ao trocar setor
+    if (key === "setor") params.delete("servico");
+    router.push(`/atendimentos?${params.toString()}`);
+  }
 
   function handleAssumirConfirm() {
     if (!assumirTarget) return;
     const target = assumirTarget;
-    const servidor = mockUsuarios.find((u) => u.id === SERVIDOR_MOCK_ID);
-    atendimentosStore.assumir(target.id, SERVIDOR_MOCK_ID, servidor, STATUS_EM_ATENDIMENTO);
-    toast.success(`Atendimento de ${target.beneficiario?.nome} assumido.`);
     setAssumirTarget(null);
-    router.push(`/atendimentos/${target.id}`);
+
+    startTransition(async () => {
+      const result = await assumirAtendimento(target.id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Atendimento de ${target.beneficiario.nome} assumido.`);
+      router.push(`/atendimentos/${target.id}`);
+    });
   }
 
   const canAssume = role === "admin" || role === "entrevistador";
@@ -171,10 +166,8 @@ export function AtendimentosPageClient() {
           <div className="flex flex-wrap items-center gap-3">
             <FilterIcon className="size-4 text-muted-foreground" />
             <Select
-              value={filterSetor}
-              onValueChange={(v) => {
-                if (v !== null) { setFilterSetor(v); setFilterServico("todos"); }
-              }}
+              value={filterSetorId ?? "todos"}
+              onValueChange={(v) => { if (v !== null) updateFilter("setor", v); }}
             >
               <SelectTrigger className="w-52">
                 <SelectValue placeholder="Todos os setores" />
@@ -190,15 +183,15 @@ export function AtendimentosPageClient() {
             </Select>
 
             <Select
-              value={filterServico}
-              onValueChange={(v) => { if (v !== null) setFilterServico(v); }}
+              value={filterServicoId ?? "todos"}
+              onValueChange={(v) => { if (v !== null) updateFilter("servico", v); }}
             >
               <SelectTrigger className="w-52">
                 <SelectValue placeholder="Todos os serviços" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os serviços</SelectItem>
-                {servicosFiltradosFila.map((s) => (
+                {servicosFiltraveisNaFila.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.codigo} — {s.nome}
                   </SelectItem>
@@ -206,11 +199,11 @@ export function AtendimentosPageClient() {
               </SelectContent>
             </Select>
 
-            {(filterSetor !== "todos" || filterServico !== "todos") && (
+            {(filterSetorId || filterServicoId) && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setFilterSetor("todos"); setFilterServico("todos"); }}
+                onClick={() => router.push("/atendimentos")}
               >
                 Limpar filtros
               </Button>
@@ -253,14 +246,14 @@ export function AtendimentosPageClient() {
                         {index + 1}
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium">{a.beneficiario?.nome ?? "—"}</p>
+                        <p className="font-medium">{a.beneficiario.nome}</p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {a.beneficiario?.cpf}
+                          {a.beneficiario.cpf}
                         </p>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm">{a.setor?.codigo}</p>
-                        <p className="text-xs text-muted-foreground">{a.servico?.nome}</p>
+                        <p className="text-sm">{a.setor.codigo}</p>
+                        <p className="text-xs text-muted-foreground">{a.servico.nome}</p>
                       </TableCell>
                       <TableCell>
                         <PrioridadeBadge prioritario={a.prioritario} showNormal />
@@ -280,6 +273,7 @@ export function AtendimentosPageClient() {
                             size="sm"
                             variant="outline"
                             className="gap-1.5"
+                            disabled={isPending}
                             onClick={() => setAssumirTarget(a)}
                           >
                             <UserCheckIcon className="size-3.5" />
@@ -300,15 +294,15 @@ export function AtendimentosPageClient() {
           <div className="flex flex-wrap items-center gap-3">
             <FilterIcon className="size-4 text-muted-foreground" />
             <Select
-              value={filterStatus}
-              onValueChange={(v) => { if (v !== null) setFilterStatus(v); }}
+              value={filterStatusId ?? "todos"}
+              onValueChange={(v) => { if (v !== null) updateFilter("status", v); }}
             >
               <SelectTrigger className="w-52">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
-                {mockStatus.map((s) => (
+                {allStatus.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.nome}
                   </SelectItem>
@@ -316,8 +310,16 @@ export function AtendimentosPageClient() {
               </SelectContent>
             </Select>
 
-            {filterStatus !== "todos" && (
-              <Button variant="ghost" size="sm" onClick={() => setFilterStatus("todos")}>
+            {filterStatusId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("status");
+                  router.push(`/atendimentos?${params.toString()}`);
+                }}
+              >
                 Limpar filtro
               </Button>
             )}
@@ -349,14 +351,14 @@ export function AtendimentosPageClient() {
                       onClick={() => router.push(`/atendimentos/${a.id}`)}
                     >
                       <TableCell>
-                        <p className="font-medium">{a.beneficiario?.nome ?? "—"}</p>
+                        <p className="font-medium">{a.beneficiario.nome}</p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {a.beneficiario?.cpf}
+                          {a.beneficiario.cpf}
                         </p>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm">{a.setor?.codigo}</p>
-                        <p className="text-xs text-muted-foreground">{a.servico?.nome}</p>
+                        <p className="text-sm">{a.setor.codigo}</p>
+                        <p className="text-xs text-muted-foreground">{a.servico.nome}</p>
                       </TableCell>
                       <TableCell>
                         <PrioridadeBadge prioritario={a.prioritario} showNormal />
@@ -385,23 +387,28 @@ export function AtendimentosPageClient() {
         </TabsContent>
       </Tabs>
 
-      {/* Sheet de novo atendimento */}
-      <NovoAtendimentoSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      <NovoAtendimentoSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        setores={setores}
+        servicos={servicos}
+      />
 
-      {/* Dialog de confirmar assumir */}
       <AlertDialog open={!!assumirTarget} onOpenChange={(o) => { if (!o) setAssumirTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Assumir atendimento?</AlertDialogTitle>
             <AlertDialogDescription>
               Você vai assumir o atendimento de{" "}
-              <strong>{assumirTarget?.beneficiario?.nome}</strong>. O status será
+              <strong>{assumirTarget?.beneficiario.nome}</strong>. O status será
               alterado para <em>Em Atendimento</em> e você será o responsável.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAssumirConfirm}>Assumir</AlertDialogAction>
+            <AlertDialogAction onClick={handleAssumirConfirm} disabled={isPending}>
+              Assumir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

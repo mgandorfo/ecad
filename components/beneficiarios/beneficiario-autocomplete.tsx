@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
-import { SearchIcon, XIcon } from "lucide-react";
+import { useState, useRef, useEffect, useId, useTransition } from "react";
+import { createPortal } from "react-dom";
+import { SearchIcon, XIcon, LoaderIcon } from "lucide-react";
 
-import { mockBeneficiarios } from "@/lib/mocks";
+import { listarBeneficiarios } from "@/app/(app)/beneficiarios/actions";
 import type { Beneficiario } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,27 +26,35 @@ export function BeneficiarioAutocomplete({
   const inputId = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [results, setResults] = useState<Beneficiario[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputWrapRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const results =
-    query.trim().length < 2
-      ? []
-      : mockBeneficiarios
-          .filter((b) => {
-            const q = query.toLowerCase();
-            return (
-              b.nome.toLowerCase().includes(q) ||
-              b.cpf.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-            );
-          })
-          .slice(0, 8);
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      startTransition(async () => {
+        const { items } = await listarBeneficiarios(query.trim(), 1, 8);
+        setResults(items);
+      });
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -53,15 +62,24 @@ export function BeneficiarioAutocomplete({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Recalcula a posição do dropdown sempre que abre
+  useEffect(() => {
+    if (open && inputWrapRef.current) {
+      setDropdownRect(inputWrapRef.current.getBoundingClientRect());
+    }
+  }, [open, results]);
+
   function handleSelect(b: Beneficiario) {
     onChange(b);
     setQuery("");
+    setResults([]);
     setOpen(false);
   }
 
   function handleClear() {
     onChange(null);
     setQuery("");
+    setResults([]);
   }
 
   if (value) {
@@ -88,28 +106,23 @@ export function BeneficiarioAutocomplete({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-1.5" ref={containerRef}>
-      <Label htmlFor={inputId}>Beneficiário</Label>
-      <div className="relative">
-        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          id={inputId}
-          className="pl-8"
-          placeholder="Buscar por nome ou CPF..."
-          value={query}
-          disabled={disabled}
-          aria-invalid={!!error}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-        />
-        {open && results.length > 0 && (
+  const showDropdown = open && query.trim().length >= 2;
+
+  const dropdown =
+    showDropdown && dropdownRect ? (
+      <div
+        style={{
+          position: "fixed",
+          top: dropdownRect.bottom + 4,
+          left: dropdownRect.left,
+          width: dropdownRect.width,
+          zIndex: 9999,
+        }}
+      >
+        {results.length > 0 ? (
           <ul
             role="listbox"
-            className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md text-sm max-h-60 overflow-auto"
+            className="rounded-md border bg-popover shadow-md text-sm max-h-60 overflow-auto"
           >
             {results.map((b) => (
               <li
@@ -129,14 +142,42 @@ export function BeneficiarioAutocomplete({
               </li>
             ))}
           </ul>
-        )}
-        {open && query.trim().length >= 2 && results.length === 0 && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md px-3 py-4 text-sm text-center text-muted-foreground">
+        ) : !isPending ? (
+          <div className="rounded-md border bg-popover shadow-md px-3 py-4 text-sm text-center text-muted-foreground">
             Nenhum beneficiário encontrado.
           </div>
+        ) : null}
+      </div>
+    ) : null;
+
+  return (
+    <div className="flex flex-col gap-1.5" ref={containerRef}>
+      <Label htmlFor={inputId}>Beneficiário</Label>
+      <div className="relative" ref={inputWrapRef}>
+        {isPending ? (
+          <LoaderIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none animate-spin" />
+        ) : (
+          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         )}
+        <Input
+          id={inputId}
+          className="pl-8"
+          placeholder="Buscar por nome ou CPF..."
+          value={query}
+          disabled={disabled}
+          aria-invalid={!!error}
+          autoComplete="off"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
+      {typeof document !== "undefined" && dropdown
+        ? createPortal(dropdown, document.body)
+        : null}
     </div>
   );
 }

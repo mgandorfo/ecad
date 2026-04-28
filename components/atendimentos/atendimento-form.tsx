@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -21,33 +21,34 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangleIcon } from "lucide-react";
 
-import { mockSetores } from "@/lib/mocks/setores";
-import { mockServicos } from "@/lib/mocks/servicos";
-import type { Beneficiario } from "@/lib/types";
+import type { Beneficiario, Setor, Servico } from "@/lib/types";
 
 const schema = z.object({
   beneficiario_id: z.string().min(1, "Selecione um beneficiário"),
   setor_id: z.string().min(1, "Selecione um setor"),
   servico_id: z.string().min(1, "Selecione um serviço"),
   prioritario: z.boolean(),
-  anotacoes: z.string().optional(),
+  anotacoes: z.string().max(5000).optional(),
 });
 
 export type AtendimentoFormData = z.infer<typeof schema>;
 
 interface AtendimentoFormProps {
+  setores: Setor[];
+  servicos: Servico[];
   onSave: (data: AtendimentoFormData, beneficiario: Beneficiario) => Promise<void>;
 }
 
-export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
+export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormProps) {
   const [beneficiario, setBeneficiario] = useState<Beneficiario | null>(null);
+  const [setorId, setSetorId] = useState("");
+  const [servicoId, setServicoId] = useState("");
+  const [prioritario, setPrioritario] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const {
-    control,
     register,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<AtendimentoFormData>({
@@ -61,15 +62,30 @@ export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
     },
   });
 
-  const setorId = watch("setor_id");
-  const prioritario = watch("prioritario");
-
+  const setoresAtivos = setores.filter((s) => s.ativo);
   const servicosFiltrados = useMemo(
-    () => mockServicos.filter((s) => s.setor_id === setorId && s.ativo),
-    [setorId]
+    () => servicos.filter((s) => s.setor_id === setorId && s.ativo),
+    [servicos, setorId]
   );
 
-  const setoresAtivos = mockSetores.filter((s) => s.ativo);
+  function handleSetorChange(v: string | null) {
+    if (!v) return;
+    setSetorId(v);
+    setServicoId("");
+    setValue("setor_id", v, { shouldValidate: true });
+    setValue("servico_id", "", { shouldValidate: false });
+  }
+
+  function handleServicoChange(v: string | null) {
+    if (!v) return;
+    setServicoId(v);
+    setValue("servico_id", v, { shouldValidate: true });
+  }
+
+  function handlePrioritarioChange(checked: boolean) {
+    setPrioritario(checked);
+    setValue("prioritario", checked);
+  }
 
   async function onSubmit(data: AtendimentoFormData) {
     if (!beneficiario) {
@@ -84,6 +100,16 @@ export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
     }
   }
 
+  // Monta o mapa de itens para o Base UI resolver os labels no SelectValue
+  const setorItems = useMemo(
+    () => setoresAtivos.map((s) => ({ value: s.id, label: `${s.codigo} — ${s.nome}` })),
+    [setoresAtivos]
+  );
+  const servicoItems = useMemo(
+    () => servicosFiltrados.map((s) => ({ value: s.id, label: `${s.codigo} — ${s.nome}` })),
+    [servicosFiltrados]
+  );
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       {/* Beneficiário */}
@@ -93,7 +119,7 @@ export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
             value={beneficiario}
             onChange={(b) => {
               setBeneficiario(b);
-              setValue("beneficiario_id", b?.id ?? "");
+              setValue("beneficiario_id", b?.id ?? "", { shouldValidate: !!b });
             }}
             error={errors.beneficiario_id?.message}
           />
@@ -104,64 +130,49 @@ export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="setor">Setor</Label>
-            <Controller
-              name="setor_id"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v);
-                    setValue("servico_id", "");
-                  }}
-                >
-                  <SelectTrigger id="setor" aria-invalid={!!errors.setor_id}>
-                    <SelectValue placeholder="Selecione o setor..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {setoresAtivos.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.codigo} — {s.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+            <Label htmlFor="setor-trigger">Setor</Label>
+            <Select
+              value={setorId || null}
+              onValueChange={handleSetorChange}
+              items={setorItems}
+            >
+              <SelectTrigger id="setor-trigger" aria-invalid={!!errors.setor_id}>
+                <SelectValue placeholder="Selecione o setor..." />
+              </SelectTrigger>
+              <SelectContent>
+                {setoresAtivos.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.codigo} — {s.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.setor_id && (
               <p className="text-xs text-destructive">{errors.setor_id.message}</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="servico">Serviço</Label>
-            <Controller
-              name="servico_id"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={!setorId}
-                >
-                  <SelectTrigger id="servico" aria-invalid={!!errors.servico_id}>
-                    <SelectValue
-                      placeholder={
-                        setorId ? "Selecione o serviço..." : "Selecione um setor primeiro"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {servicosFiltrados.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.codigo} — {s.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+            <Label htmlFor="servico-trigger">Serviço</Label>
+            <Select
+              value={servicoId || null}
+              onValueChange={handleServicoChange}
+              disabled={!setorId}
+              items={servicoItems}
+            >
+              <SelectTrigger id="servico-trigger" aria-invalid={!!errors.servico_id}>
+                <SelectValue
+                  placeholder={setorId ? "Selecione o serviço..." : "Selecione um setor primeiro"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {servicosFiltrados.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.codigo} — {s.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.servico_id && (
               <p className="text-xs text-destructive">{errors.servico_id.message}</p>
             )}
@@ -179,16 +190,7 @@ export function AtendimentoForm({ onSave }: AtendimentoFormProps) {
                 Sobe este atendimento ao topo da fila
               </p>
             </div>
-            <Controller
-              name="prioritario"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
+            <Switch checked={prioritario} onCheckedChange={handlePrioritarioChange} />
           </div>
           {prioritario && (
             <div className="mt-3 flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

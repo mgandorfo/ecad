@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -10,13 +10,19 @@ import {
   UserCheckIcon,
   ClockIcon,
   MapPinIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 import Link from "next/link";
 
-import { atendimentosStore } from "@/lib/stores/atendimentos";
-import { mockStatus } from "@/lib/mocks/status";
-import { mockUsuarios } from "@/lib/mocks/usuarios";
-import type { Atendimento } from "@/lib/types";
+import {
+  assumirAtendimento,
+  atualizarStatus,
+  atualizarAnotacoes,
+  concluirAtendimento,
+  trocarEntrevistador,
+  type AtendimentoComJoins,
+} from "@/app/(app)/atendimentos/actions";
+import type { Perfil, StatusAtendimento } from "@/lib/types";
 import { useRole } from "@/lib/role-context";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -43,111 +49,129 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/atendimentos/status-badge";
 import { PrioridadeBadge } from "@/components/atendimentos/prioridade-badge";
 import { formatDateTime } from "@/lib/format";
 import { formatCpf } from "@/lib/utils/cpf";
 
-const SERVIDOR_MOCK_ID = "u2";
-const STATUS_CONCLUIDO = mockStatus.find((s) => s.nome === "Concluído") ?? mockStatus[2];
-
 interface AtendimentoDetalheClientProps {
-  id: string;
+  atendimento: AtendimentoComJoins;
+  allStatus: StatusAtendimento[];
+  entrevistadores: Perfil[];
+  userId: string;
 }
 
-export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) {
+export function AtendimentoDetalheClient({
+  atendimento,
+  allStatus,
+  entrevistadores,
+  userId,
+}: AtendimentoDetalheClientProps) {
   const router = useRouter();
   const role = useRole();
+  const [isPending, startTransition] = useTransition();
 
-  const [atendimento, setAtendimento] = useState<Atendimento | undefined>(() =>
-    atendimentosStore.getById(id)
-  );
-  const [anotacoes, setAnotacoes] = useState(atendimento?.anotacoes ?? "");
-  const [statusSelecionado, setStatusSelecionado] = useState(atendimento?.status_id ?? "");
-  const [savingAnotacao, setSavingAnotacao] = useState(false);
-  const [savingStatus, setSavingStatus] = useState(false);
+  const [anotacoes, setAnotacoes] = useState(atendimento.anotacoes ?? "");
+  const [statusSelecionado, setStatusSelecionado] = useState(atendimento.status_id);
   const [confirmConcluir, setConfirmConcluir] = useState(false);
   const [assumirConfirm, setAssumirConfirm] = useState(false);
-
-  useEffect(() => {
-    return atendimentosStore.subscribe(() => {
-      const updated = atendimentosStore.getById(id);
-      setAtendimento(updated);
-      // Não sobrescreve anotacoes/statusSelecionado: o usuário edita e salva explicitamente.
-      // Esses campos só precisam ser re-sincronizados se o atendimento foi concluído externamente.
-      if (updated?.concluido_em) {
-        setStatusSelecionado(updated.status_id);
-      }
-    });
-  }, [id]);
-
-  if (!atendimento) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-20 text-center text-muted-foreground">
-        <p className="text-sm">Atendimento não encontrado.</p>
-        <Link href="/atendimentos" className={buttonVariants({ variant: "outline" })}>
-          <ArrowLeftIcon />
-          Voltar para atendimentos
-        </Link>
-      </div>
-    );
-  }
+  const [trocarDialogOpen, setTrocarDialogOpen] = useState(false);
+  const [novoServidorId, setNovoServidorId] = useState("");
 
   const isConcluido = !!atendimento.concluido_em;
-  const isMeuAtendimento = atendimento.servidor_id === SERVIDOR_MOCK_ID;
+  const isMeuAtendimento = atendimento.servidor_id === userId;
   const temServidor = !!atendimento.servidor_id;
-  const canEdit =
-    !isConcluido && temServidor && (role === "admin" || (role === "entrevistador" && isMeuAtendimento));
-  const canConcluir = canEdit;
-  const canAssume =
-    !isConcluido &&
-    !temServidor &&
-    (role === "admin" || role === "entrevistador");
 
-  async function handleSalvarStatus() {
-    if (statusSelecionado === atendimento!.status_id) return;
-    setSavingStatus(true);
-    await new Promise((r) => setTimeout(r, 300));
-    const novoStatus = mockStatus.find((s) => s.id === statusSelecionado);
-    atendimentosStore.updateStatus(id, statusSelecionado, novoStatus);
-    toast.success("Status atualizado.");
-    setSavingStatus(false);
+  const canEdit =
+    !isConcluido &&
+    temServidor &&
+    (role === "admin" || (role === "entrevistador" && isMeuAtendimento));
+
+  const canConcluir = canEdit;
+
+  const canAssume =
+    !isConcluido && !temServidor && (role === "admin" || role === "entrevistador");
+
+  const canTrocarEntrevistador = !isConcluido && role === "admin";
+
+  function handleSalvarStatus() {
+    if (statusSelecionado === atendimento.status_id) return;
+    startTransition(async () => {
+      const result = await atualizarStatus(atendimento.id, statusSelecionado);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Status atualizado.");
+      router.refresh();
+    });
   }
 
-  async function handleSalvarAnotacao() {
-    setSavingAnotacao(true);
-    await new Promise((r) => setTimeout(r, 300));
-    atendimentosStore.adicionarAnotacao(id, anotacoes);
-    toast.success("Anotações salvas.");
-    setSavingAnotacao(false);
+  function handleSalvarAnotacao() {
+    startTransition(async () => {
+      const result = await atualizarAnotacoes(atendimento.id, anotacoes);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Anotações salvas.");
+      router.refresh();
+    });
   }
 
   function handleConcluirConfirm() {
-    atendimentosStore.concluir(id, STATUS_CONCLUIDO);
-    toast.success("Atendimento concluído.");
     setConfirmConcluir(false);
-    router.push("/atendimentos?aba=meus");
+    startTransition(async () => {
+      const result = await concluirAtendimento(atendimento.id);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Atendimento concluído.");
+      router.push("/atendimentos?aba=meus");
+    });
   }
 
   function handleAssumirConfirm() {
-    const servidor = mockUsuarios.find((u) => u.id === SERVIDOR_MOCK_ID);
-    const statusEmAtendimento = mockStatus.find((s) => s.nome === "Em Atendimento") ?? mockStatus[1];
-    atendimentosStore.assumir(id, SERVIDOR_MOCK_ID, servidor, statusEmAtendimento);
-    toast.success("Atendimento assumido.");
     setAssumirConfirm(false);
+    startTransition(async () => {
+      const result = await assumirAtendimento(atendimento.id);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Atendimento assumido.");
+      router.refresh();
+    });
+  }
+
+  function handleTrocarEntrevistador() {
+    if (!novoServidorId) return;
+    setTrocarDialogOpen(false);
+    startTransition(async () => {
+      const result = await trocarEntrevistador(atendimento.id, novoServidorId);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Entrevistador atualizado.");
+      setNovoServidorId("");
+      router.refresh();
+    });
   }
 
   const b = atendimento.beneficiario;
-  const endereco = b
-    ? [b.logradouro, b.numero, b.complemento, b.bairro, `${b.cidade}/${b.uf}`]
-        .filter(Boolean)
-        .join(", ")
-    : null;
+  const endereco = [b.logradouro, b.numero, b.complemento, b.bairro, `${b.cidade}/${b.uf}`]
+    .filter(Boolean)
+    .join(", ");
+
+  const entrevistadoresFiltrados = entrevistadores.filter(
+    (e) => atendimento.servidor_id === null || e.id !== atendimento.servidor_id
+  );
+
+  const statusItems = allStatus.map((s) => ({ value: s.id, label: s.nome }));
+  const entrevistadorItems = entrevistadoresFiltrados.map((e) => ({
+    value: e.id,
+    label: `${e.nome} (${e.role})`,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`Atendimento — ${atendimento.beneficiario?.nome ?? id}`}
+        title={`Atendimento — ${atendimento.beneficiario.nome}`}
         description={`Registrado em ${formatDateTime(atendimento.criado_em)}`}
         actions={
           <div className="flex items-center gap-2">
@@ -158,8 +182,14 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
               <ArrowLeftIcon />
               Atendimentos
             </Link>
+            {canTrocarEntrevistador && (
+              <Button size="sm" variant="outline" onClick={() => setTrocarDialogOpen(true)}>
+                <RefreshCwIcon />
+                Trocar entrevistador
+              </Button>
+            )}
             {canAssume && (
-              <Button size="sm" onClick={() => setAssumirConfirm(true)}>
+              <Button size="sm" onClick={() => setAssumirConfirm(true)} disabled={isPending}>
                 <UserCheckIcon />
                 Assumir
               </Button>
@@ -169,6 +199,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                 size="sm"
                 variant="destructive"
                 onClick={() => setConfirmConcluir(true)}
+                disabled={isPending}
               >
                 <CheckCircle2Icon />
                 Concluir atendimento
@@ -202,12 +233,16 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                 <div className="flex items-end gap-3">
                   <div className="flex flex-col gap-1.5 flex-1">
                     <Label htmlFor="status-select">Alterar status</Label>
-                    <Select value={statusSelecionado} onValueChange={(v) => { if (v !== null) setStatusSelecionado(v); }}>
+                    <Select
+                      value={statusSelecionado}
+                      onValueChange={(v) => { if (v) setStatusSelecionado(v); }}
+                      items={statusItems}
+                    >
                       <SelectTrigger id="status-select">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockStatus.map((s) => (
+                        {allStatus.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.nome}
                           </SelectItem>
@@ -217,11 +252,11 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                   </div>
                   <Button
                     onClick={handleSalvarStatus}
-                    disabled={savingStatus || statusSelecionado === atendimento.status_id}
+                    disabled={isPending || statusSelecionado === atendimento.status_id}
                     size="sm"
                   >
                     <SaveIcon />
-                    {savingStatus ? "Salvando..." : "Salvar"}
+                    {isPending ? "Salvando..." : "Salvar"}
                   </Button>
                 </div>
               )}
@@ -238,7 +273,9 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                 <>
                   <Textarea
                     value={anotacoes}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAnotacoes(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      setAnotacoes(e.target.value)
+                    }
                     placeholder="Registre observações sobre este atendimento..."
                     rows={6}
                   />
@@ -246,11 +283,11 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={savingAnotacao || anotacoes === (atendimento.anotacoes ?? "")}
+                      disabled={isPending || anotacoes === (atendimento.anotacoes ?? "")}
                       onClick={handleSalvarAnotacao}
                     >
                       <SaveIcon />
-                      {savingAnotacao ? "Salvando..." : "Salvar anotações"}
+                      {isPending ? "Salvando..." : "Salvar anotações"}
                     </Button>
                   </div>
                 </>
@@ -262,7 +299,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
             </CardContent>
           </Card>
 
-          {/* Datas */}
+          {/* Histórico de datas */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Histórico</CardTitle>
@@ -283,8 +320,17 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                   </dt>
                   <dd className="font-medium mt-0.5">{formatDateTime(atendimento.atualizado_em)}</dd>
                 </div>
+                {atendimento.assumido_em && (
+                  <div>
+                    <dt className="text-muted-foreground flex items-center gap-1.5">
+                      <UserCheckIcon className="size-3.5" />
+                      Assumido em
+                    </dt>
+                    <dd className="font-medium mt-0.5">{formatDateTime(atendimento.assumido_em)}</dd>
+                  </div>
+                )}
                 {atendimento.concluido_em && (
-                  <div className="col-span-2">
+                  <div>
                     <dt className="text-muted-foreground flex items-center gap-1.5">
                       <CheckCircle2Icon className="size-3.5 text-emerald-600" />
                       Concluído em
@@ -299,7 +345,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
           </Card>
         </div>
 
-        {/* Sidebar de informações */}
+        {/* Sidebar */}
         <div className="flex flex-col gap-6">
           {/* Beneficiário */}
           <Card>
@@ -308,9 +354,9 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
               <div>
-                <p className="font-semibold">{b?.nome ?? "—"}</p>
+                <p className="font-semibold">{b.nome}</p>
                 <p className="text-muted-foreground font-mono text-xs mt-0.5">
-                  {b ? formatCpf(b.cpf) : "—"}
+                  {formatCpf(b.cpf)}
                 </p>
               </div>
               {endereco && (
@@ -320,7 +366,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                 </div>
               )}
               <Link
-                href={`/beneficiarios/${b?.id}`}
+                href={`/beneficiarios/${b.id}`}
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 Ver cadastro completo
@@ -337,20 +383,20 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
               <div>
                 <p className="text-muted-foreground text-xs">Setor</p>
                 <p className="font-medium">
-                  {atendimento.setor?.codigo} — {atendimento.setor?.nome}
+                  {atendimento.setor.codigo} — {atendimento.setor.nome}
                 </p>
               </div>
               <Separator />
               <div>
                 <p className="text-muted-foreground text-xs">Serviço</p>
                 <p className="font-medium">
-                  {atendimento.servico?.codigo} — {atendimento.servico?.nome}
+                  {atendimento.servico.codigo} — {atendimento.servico.nome}
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Servidor responsável */}
+          {/* Responsável */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Responsável</CardTitle>
@@ -365,7 +411,9 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
                   </Badge>
                 </div>
               ) : (
-                <p className="text-muted-foreground">Nenhum servidor assumiu este atendimento.</p>
+                <p className="text-muted-foreground">
+                  Nenhum servidor assumiu este atendimento.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -384,7 +432,7 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConcluirConfirm}>
+            <AlertDialogAction onClick={handleConcluirConfirm} disabled={isPending}>
               Concluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -403,10 +451,70 @@ export function AtendimentoDetalheClient({ id }: AtendimentoDetalheClientProps) 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAssumirConfirm}>Assumir</AlertDialogAction>
+            <AlertDialogAction onClick={handleAssumirConfirm} disabled={isPending}>
+              Assumir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: trocar entrevistador */}
+      <Dialog open={trocarDialogOpen} onOpenChange={setTrocarDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trocar entrevistador</DialogTitle>
+            <DialogDescription>
+              Selecione o novo entrevistador responsável por este atendimento.
+              {atendimento.servidor && (
+                <span className="block mt-1">
+                  Responsável atual: <strong>{atendimento.servidor.nome}</strong>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="novo-entrevistador">Novo entrevistador</Label>
+            <Select
+              value={novoServidorId || null}
+              onValueChange={(v) => { if (v) setNovoServidorId(v); }}
+              items={entrevistadorItems}
+            >
+              <SelectTrigger id="novo-entrevistador">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent>
+                {entrevistadoresFiltrados.length === 0 ? (
+                  <SelectItem value="-" disabled>
+                    Nenhum entrevistador disponível
+                  </SelectItem>
+                ) : (
+                  entrevistadoresFiltrados.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.nome}
+                      <span className="ml-1 text-xs text-muted-foreground capitalize">
+                        ({e.role})
+                      </span>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrocarDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleTrocarEntrevistador}
+              disabled={!novoServidorId || isPending}
+            >
+              {isPending ? "Salvando..." : "Confirmar troca"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
