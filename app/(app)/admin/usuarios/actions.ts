@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Perfil, Role } from "@/lib/types";
 
 const updateSchema = z.object({
@@ -50,6 +51,7 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
   }
 
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   // Verifica se o e-mail já existe no perfil
   const { data: existing } = await supabase
@@ -62,8 +64,8 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
     return { ok: false, error: "Já existe um usuário com este e-mail." };
   }
 
-  // Cria usuário via Supabase Auth (envia e-mail de convite)
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  // Cria usuário via Supabase Auth (requer service role)
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: parsed.data.email,
     email_confirm: false,
     user_metadata: { nome: parsed.data.nome },
@@ -76,8 +78,8 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
     return { ok: false, error: authError.message };
   }
 
-  // Atualiza o perfil criado pelo trigger com o nome e role corretos
-  const { data: perfil, error: perfilError } = await supabase
+  // Atualiza o perfil criado pelo trigger com o nome e role corretos (service role ignora RLS)
+  const { data: perfil, error: perfilError } = await adminClient
     .from("perfis")
     .update({ nome: parsed.data.nome, role: parsed.data.role as Role })
     .eq("id", authData.user.id)
@@ -113,10 +115,10 @@ export async function atualizarUsuario(id: string, raw: UsuarioUpdateData): Prom
 }
 
 export async function excluirUsuario(id: string): Promise<ActionResult> {
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   // Deleta o usuário do Auth (o trigger cuida da limpeza do perfil via CASCADE)
-  const { error } = await supabase.auth.admin.deleteUser(id);
+  const { error } = await adminClient.auth.admin.deleteUser(id);
 
   if (error) return { ok: false, error: error.message };
 

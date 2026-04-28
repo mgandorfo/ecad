@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PlusIcon, SearchIcon, UserIcon } from "lucide-react";
 
@@ -31,9 +31,10 @@ interface Props {
 
 export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [page, setPage] = useState(parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const [deleteTarget, setDeleteTarget] = useState<Beneficiario | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(initialTotal / PAGE_SIZE));

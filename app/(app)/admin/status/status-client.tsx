@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,9 +52,10 @@ interface Props {
 
 export function StatusClient({ initialItems, initialTotal }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [page, setPage] = useState(parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StatusAtendimento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StatusAtendimento | null>(null);
