@@ -1,5 +1,11 @@
+import { getRequiredUser } from "@/lib/supabase/auth";
 import { AppShell } from "@/components/layout/app-shell";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getRequiredUser();
+  return <AppShell user={user}>{children}</AppShell>;
 }

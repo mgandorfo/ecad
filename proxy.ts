@@ -1,18 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-// Proxy stub — Supabase auth será integrado no Milestone 8.
-// Sem variáveis de ambiente configuradas, passa todas as requisições.
-export async function proxy(request: NextRequest) {
-  const hasSupabase =
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Rotas que não precisam de sessão
+const PUBLIC_PATHS = ["/login", "/recuperar", "/redefinir", "/auth/callback"];
 
-  if (hasSupabase) {
-    const { updateSession } = await import("@/lib/supabase/middleware");
-    return updateSession(request);
-  }
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  return NextResponse.next();
+  const isPublic =
+    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
+    pathname === "/";
+
+  // Sempre executa updateSession para manter o token fresco
+  const response = await updateSession(request);
+
+  // Se for rota pública, deixa passar (updateSession já tratou o refresh)
+  if (isPublic) return response;
+
+  // Para rotas protegidas, updateSession já redireciona para /login quando
+  // não há sessão. Retornamos a resposta dele diretamente.
+  return response;
 }
 
 export const config = {
