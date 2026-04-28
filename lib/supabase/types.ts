@@ -13,7 +13,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      perfis: {
         Row: {
           id: string;
           nome: string;
@@ -45,21 +45,18 @@ export type Database = {
           codigo: string;
           nome: string;
           ativo: boolean;
-          criado_em: string;
         };
         Insert: {
           id?: string;
           codigo: string;
           nome: string;
           ativo?: boolean;
-          criado_em?: string;
         };
         Update: {
           id?: string;
           codigo?: string;
           nome?: string;
           ativo?: boolean;
-          criado_em?: string;
         };
       };
       servicos: {
@@ -69,7 +66,6 @@ export type Database = {
           nome: string;
           setor_id: string;
           ativo: boolean;
-          criado_em: string;
         };
         Insert: {
           id?: string;
@@ -77,7 +73,6 @@ export type Database = {
           nome: string;
           setor_id: string;
           ativo?: boolean;
-          criado_em?: string;
         };
         Update: {
           id?: string;
@@ -85,7 +80,6 @@ export type Database = {
           nome?: string;
           setor_id?: string;
           ativo?: boolean;
-          criado_em?: string;
         };
       };
       status_atendimento: {
@@ -95,7 +89,6 @@ export type Database = {
           cor: string;
           ordem: number;
           ativo: boolean;
-          criado_em: string;
         };
         Insert: {
           id?: string;
@@ -103,7 +96,6 @@ export type Database = {
           cor?: string;
           ordem?: number;
           ativo?: boolean;
-          criado_em?: string;
         };
         Update: {
           id?: string;
@@ -111,7 +103,6 @@ export type Database = {
           cor?: string;
           ordem?: number;
           ativo?: boolean;
-          criado_em?: string;
         };
       };
       beneficiarios: {
@@ -137,8 +128,8 @@ export type Database = {
           numero: string;
           complemento?: string | null;
           bairro: string;
-          cidade: string;
-          uf: string;
+          cidade?: string;
+          uf?: string;
           cep?: string | null;
           criado_em?: string;
           atualizado_em?: string;
@@ -207,7 +198,7 @@ export type Database = {
       };
     };
     Enums: {
-      role: "admin" | "entrevistador" | "recepcionista" | "vigilancia";
+      role_usuario: "admin" | "entrevistador" | "recepcionista" | "vigilancia";
     };
   };
 };

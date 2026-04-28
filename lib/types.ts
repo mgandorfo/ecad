@@ -44,6 +44,7 @@ export type Beneficiario = {
   uf: string;
   cep?: string;
   criado_em: string;
+  atualizado_em: string;
 };
 
 export type Atendimento = {
@@ -53,10 +54,12 @@ export type Atendimento = {
   servico_id: string;
   status_id: string;
   servidor_id: string | null;
+  criado_por: string;
   prioritario: boolean;
   anotacoes: string | null;
   criado_em: string;
   atualizado_em: string;
+  assumido_em: string | null;
   concluido_em: string | null;
   beneficiario?: Beneficiario;
   setor?: Setor;

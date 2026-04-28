@@ -29,6 +29,7 @@ export default function NovoBeneficiarioPage() {
       uf: data.uf,
       cep: data.cep,
       criado_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString(),
     });
     toast.success("Beneficiário cadastrado com sucesso.");
     router.push("/beneficiarios");

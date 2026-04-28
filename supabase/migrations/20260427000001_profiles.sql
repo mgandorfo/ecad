@@ -1,5 +1,8 @@
+-- Extensão para busca sem acento
+CREATE EXTENSION IF NOT EXISTS "unaccent";
+
 -- Enum de perfis de acesso
-CREATE TYPE public.role AS ENUM (
+CREATE TYPE public.role_usuario AS ENUM (
   'admin',
   'entrevistador',
   'recepcionista',
@@ -7,42 +10,40 @@ CREATE TYPE public.role AS ENUM (
 );
 
 -- Tabela de perfis: espelha auth.users com role e dados extras
-CREATE TABLE public.profiles (
-  id         uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  nome       text        NOT NULL,
-  email      text        NOT NULL,
-  role       public.role NOT NULL DEFAULT 'recepcionista',
-  ativo      boolean     NOT NULL DEFAULT true,
-  criado_em  timestamptz NOT NULL DEFAULT now()
+CREATE TABLE public.perfis (
+  id        uuid              PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  nome      text              NOT NULL,
+  email     text              NOT NULL UNIQUE,
+  role      public.role_usuario NOT NULL DEFAULT 'recepcionista',
+  ativo     boolean           NOT NULL DEFAULT true,
+  criado_em timestamptz       NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.perfis ENABLE ROW LEVEL SECURITY;
 
--- Qualquer usuário autenticado lê qualquer perfil (exibir nomes na fila, etc.)
-CREATE POLICY "profiles: leitura autenticada"
-  ON public.profiles FOR SELECT
-  TO authenticated
-  USING (true);
+-- Helper: role do usuário logado (evita subquery em cada política RLS)
+CREATE OR REPLACE FUNCTION public.minha_role()
+RETURNS public.role_usuario
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT role FROM public.perfis WHERE id = auth.uid();
+$$;
 
--- Usuário edita apenas o próprio perfil (nome)
-CREATE POLICY "profiles: atualizar próprio"
-  ON public.profiles FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
+-- Perfis: cada um vê o próprio; admin vê todos
+CREATE POLICY "perfis_select" ON public.perfis FOR SELECT
+  USING (id = auth.uid() OR public.minha_role() = 'admin');
 
--- Somente admin gerencia perfis alheios
-CREATE POLICY "profiles: admin gerencia todos"
-  ON public.profiles FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
-  );
+-- Usuário atualiza o próprio perfil
+CREATE POLICY "perfis_update_proprio" ON public.perfis FOR UPDATE
+  USING (id = auth.uid());
 
--- Trigger: cria profile automaticamente ao registrar usuário no Auth
+-- Admin atualiza qualquer perfil
+CREATE POLICY "perfis_update_admin" ON public.perfis FOR UPDATE
+  USING (public.minha_role() = 'admin');
+
+-- Trigger: cria perfil automaticamente ao registrar usuário no Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -50,12 +51,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, nome, email, role)
+  INSERT INTO public.perfis (id, nome, email)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'nome', split_part(NEW.email, '@', 1)),
-    NEW.email,
-    COALESCE((NEW.raw_user_meta_data->>'role')::public.role, 'recepcionista')
+    COALESCE(NEW.raw_user_meta_data->>'nome', NEW.email),
+    NEW.email
   );
   RETURN NEW;
 END;
