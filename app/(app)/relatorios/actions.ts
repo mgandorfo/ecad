@@ -56,6 +56,7 @@ function mapRow(r: ViewRow): Atendimento {
           bairro: "",
           cidade: "",
           uf: "",
+          prioritario: false,
           criado_em: "",
           atualizado_em: "",
         }

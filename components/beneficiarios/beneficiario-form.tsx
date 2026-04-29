@@ -33,7 +33,7 @@ const schema = z.object({
   cidade: z.string().min(1, "Cidade obrigatória").max(100),
   uf: z.string().length(2, "UF inválida"),
   cep: z.string().optional(),
-  prioritario: z.boolean().default(false),
+  prioritario: z.boolean(),
 });
 
 export type BeneficiarioFormData = z.infer<typeof schema>;
