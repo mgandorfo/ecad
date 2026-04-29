@@ -11,6 +11,7 @@ import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { Beneficiario } from "@/lib/types";
 import { formatCpf, formatCep, stripCpf, validateCpf } from "@/lib/utils/cpf";
 
@@ -32,6 +33,7 @@ const schema = z.object({
   cidade: z.string().min(1, "Cidade obrigatória").max(100),
   uf: z.string().length(2, "UF inválida"),
   cep: z.string().optional(),
+  prioritario: z.boolean().default(false),
 });
 
 export type BeneficiarioFormData = z.infer<typeof schema>;
@@ -47,6 +49,7 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
   const [saving, setSaving] = useState(false);
   const [cpfValue, setCpfValue] = useState(initial ? formatCpf(initial.cpf) : "");
   const [cepValue, setCepValue] = useState(initial?.cep ?? "");
+  const [prioritario, setPrioritario] = useState(initial?.prioritario ?? false);
 
   const {
     register,
@@ -66,8 +69,9 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
           cidade: initial.cidade,
           uf: initial.uf,
           cep: initial.cep ?? "",
+          prioritario: initial.prioritario,
         }
-      : { cidade: "Caarapo", uf: "MS" },
+      : { cidade: "Caarapo", uf: "MS", prioritario: false },
   });
 
   useEffect(() => {
@@ -246,6 +250,28 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
               <p className="text-xs text-destructive">{errors.uf.message}</p>
             )}
           </div>
+        </div>
+      </fieldset>
+
+      {/* Atendimento prioritário */}
+      <fieldset className="flex flex-col gap-4">
+        <legend className="text-sm font-semibold text-muted-foreground mb-2">
+          Prioridade
+        </legend>
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+          <div>
+            <p className="text-sm font-medium">Beneficiário prioritário</p>
+            <p className="text-xs text-muted-foreground">
+              Novos atendimentos deste beneficiário já iniciarão como prioritários
+            </p>
+          </div>
+          <Switch
+            checked={prioritario}
+            onCheckedChange={(checked) => {
+              setPrioritario(checked);
+              setValue("prioritario", checked);
+            }}
+          />
         </div>
       </fieldset>
 

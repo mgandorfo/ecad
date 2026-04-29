@@ -43,6 +43,7 @@ export type Beneficiario = {
   cidade: string;
   uf: string;
   cep?: string;
+  prioritario: boolean;
   criado_em: string;
   atualizado_em: string;
 };

@@ -86,6 +86,35 @@ export async function atualizarSetor(id: string, raw: SetorFormData): Promise<Ac
   return { ok: true, data: data as Setor };
 }
 
+export async function toggleAtivoSetor(id: string): Promise<ActionResult<Setor>> {
+  const supabase = await createClient();
+
+  const { data: current, error: fetchError } = await supabase
+    .from("setores")
+    .select("ativo")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !current) {
+    return { ok: false, error: "Setor não encontrado." };
+  }
+
+  const { data, error } = await supabase
+    .from("setores")
+    .update({ ativo: !current.ativo })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[toggleAtivoSetor]", error.message);
+    return { ok: false, error: "Falha ao atualizar status do setor." };
+  }
+
+  revalidatePath("/admin/setores");
+  return { ok: true, data: data as Setor };
+}
+
 export async function excluirSetor(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("setores").delete().eq("id", id);

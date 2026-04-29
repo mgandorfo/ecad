@@ -19,6 +19,7 @@ const schema = z.object({
   cidade: z.string().min(1, "Cidade obrigatória").max(100),
   uf: z.string().length(2, "UF inválida"),
   cep: z.string().max(9).optional(),
+  prioritario: z.boolean().default(false),
 });
 
 export type BeneficiarioFormData = z.infer<typeof schema>;
@@ -91,6 +92,7 @@ export async function criarBeneficiario(raw: BeneficiarioFormData): Promise<Acti
       cidade: parsed.data.cidade,
       uf: parsed.data.uf,
       cep: parsed.data.cep ? parsed.data.cep.replace(/\D/g, "") : null,
+      prioritario: parsed.data.prioritario,
     })
     .select()
     .single();
@@ -125,6 +127,7 @@ export async function atualizarBeneficiario(id: string, raw: BeneficiarioFormDat
       cidade: parsed.data.cidade,
       uf: parsed.data.uf,
       cep: parsed.data.cep ? parsed.data.cep.replace(/\D/g, "") : null,
+      prioritario: parsed.data.prioritario,
       atualizado_em: new Date().toISOString(),
     })
     .eq("id", id)

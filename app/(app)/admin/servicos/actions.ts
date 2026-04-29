@@ -102,6 +102,35 @@ export async function atualizarServico(id: string, raw: ServicoFormData): Promis
   return { ok: true, data: data as Servico };
 }
 
+export async function toggleAtivoServico(id: string): Promise<ActionResult<Servico>> {
+  const supabase = await createClient();
+
+  const { data: current, error: fetchError } = await supabase
+    .from("servicos")
+    .select("ativo")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !current) {
+    return { ok: false, error: "Serviço não encontrado." };
+  }
+
+  const { data, error } = await supabase
+    .from("servicos")
+    .update({ ativo: !current.ativo })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[toggleAtivoServico]", error.message);
+    return { ok: false, error: "Falha ao atualizar status do serviço." };
+  }
+
+  revalidatePath("/admin/servicos");
+  return { ok: true, data: data as Servico };
+}
+
 export async function excluirServico(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("servicos").delete().eq("id", id);

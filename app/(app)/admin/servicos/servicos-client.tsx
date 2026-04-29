@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Loader2Icon, PlusIcon, SearchIcon, WrenchIcon } from "lucide-react";
 
 import type { Servico, Setor } from "@/lib/types";
-import { criarServico, atualizarServico, excluirServico } from "./actions";
+import { criarServico, atualizarServico, excluirServico, toggleAtivoServico } from "./actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,6 +141,18 @@ export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
     });
   }
 
+  function handleToggleAtivo(item: Servico) {
+    startTransition(async () => {
+      const result = await toggleAtivoServico(item.id);
+      if (!result.ok) {
+        toast.error(result.error);
+      } else {
+        toast.success(result.data.ativo ? "Serviço ativado." : "Serviço desativado.");
+        router.refresh();
+      }
+    });
+  }
+
   function handleDelete() {
     if (!deleteTarget) return;
     startTransition(async () => {
@@ -215,6 +227,8 @@ export function ServicosClient({ initialItems, initialTotal, setores }: Props) {
                     <RowActions
                       onEdit={() => openEdit(item)}
                       onDelete={() => setDeleteTarget(item)}
+                      ativo={item.ativo}
+                      onToggleAtivo={() => handleToggleAtivo(item)}
                     />
                   </TableCell>
                 </TableRow>

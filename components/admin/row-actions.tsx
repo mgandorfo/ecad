@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { MoreHorizontalIcon, PencilIcon, Trash2Icon, ToggleLeftIcon, ToggleRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,9 +13,11 @@ import {
 interface RowActionsProps {
   onEdit: () => void;
   onDelete: () => void;
+  ativo?: boolean;
+  onToggleAtivo?: () => void;
 }
 
-export function RowActions({ onEdit, onDelete }: RowActionsProps) {
+export function RowActions({ onEdit, onDelete, ativo, onToggleAtivo }: RowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -30,6 +32,12 @@ export function RowActions({ onEdit, onDelete }: RowActionsProps) {
           <PencilIcon />
           Editar
         </DropdownMenuItem>
+        {onToggleAtivo && (
+          <DropdownMenuItem onClick={onToggleAtivo}>
+            {ativo ? <ToggleLeftIcon /> : <ToggleRightIcon />}
+            {ativo ? "Desativar" : "Ativar"}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           <Trash2Icon />

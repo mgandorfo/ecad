@@ -173,7 +173,11 @@ export function AtendimentosPageClient({
               onValueChange={(v) => { if (v !== null) updateFilter("setor", v); }}
             >
               <SelectTrigger className="w-52">
-                <SelectValue placeholder="Todos os setores" />
+                <SelectValue>
+                  {filterSetorId && filterSetorId !== "todos"
+                    ? (() => { const s = setoresAtivos.find((x) => x.id === filterSetorId); return s ? `${s.codigo} — ${s.nome}` : "Todos os setores"; })()
+                    : "Todos os setores"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os setores</SelectItem>
@@ -190,7 +194,11 @@ export function AtendimentosPageClient({
               onValueChange={(v) => { if (v !== null) updateFilter("servico", v); }}
             >
               <SelectTrigger className="w-52">
-                <SelectValue placeholder="Todos os serviços" />
+                <SelectValue>
+                  {filterServicoId && filterServicoId !== "todos"
+                    ? (() => { const s = servicosFiltraveisNaFila.find((x) => x.id === filterServicoId); return s ? `${s.codigo} — ${s.nome}` : "Todos os serviços"; })()
+                    : "Todos os serviços"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os serviços</SelectItem>
@@ -310,7 +318,11 @@ export function AtendimentosPageClient({
               onValueChange={(v) => { if (v !== null) updateFilter("status", v); }}
             >
               <SelectTrigger className="w-52">
-                <SelectValue placeholder="Todos os status" />
+                <SelectValue>
+                  {filterStatusId && filterStatusId !== "todos"
+                    ? (allStatus.find((x) => x.id === filterStatusId)?.nome ?? "Todos os status")
+                    : "Todos os status"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>

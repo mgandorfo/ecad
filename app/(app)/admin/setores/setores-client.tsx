@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { FolderIcon, Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 
 import type { Setor } from "@/lib/types";
-import { criarSetor, atualizarSetor, excluirSetor } from "./actions";
+import { criarSetor, atualizarSetor, excluirSetor, toggleAtivoSetor } from "./actions";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,6 +123,18 @@ export function SetoresClient({ initialItems, initialTotal }: Props) {
     });
   }
 
+  function handleToggleAtivo(item: Setor) {
+    startTransition(async () => {
+      const result = await toggleAtivoSetor(item.id);
+      if (!result.ok) {
+        toast.error(result.error);
+      } else {
+        toast.success(result.data.ativo ? "Setor ativado." : "Setor desativado.");
+        router.refresh();
+      }
+    });
+  }
+
   function handleDelete() {
     if (!deleteTarget) return;
     startTransition(async () => {
@@ -195,6 +207,8 @@ export function SetoresClient({ initialItems, initialTotal }: Props) {
                     <RowActions
                       onEdit={() => openEdit(item)}
                       onDelete={() => setDeleteTarget(item)}
+                      ativo={item.ativo}
+                      onToggleAtivo={() => handleToggleAtivo(item)}
                     />
                   </TableCell>
                 </TableRow>

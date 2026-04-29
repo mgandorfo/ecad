@@ -82,6 +82,15 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
     setValue("servico_id", v, { shouldValidate: true });
   }
 
+  function handleBeneficiarioChange(b: Beneficiario | null) {
+    setBeneficiario(b);
+    setValue("beneficiario_id", b?.id ?? "", { shouldValidate: !!b });
+    if (b?.prioritario) {
+      setPrioritario(true);
+      setValue("prioritario", true);
+    }
+  }
+
   function handlePrioritarioChange(checked: boolean) {
     setPrioritario(checked);
     setValue("prioritario", checked);
@@ -117,10 +126,7 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
         <CardContent className="pt-6">
           <BeneficiarioAutocomplete
             value={beneficiario}
-            onChange={(b) => {
-              setBeneficiario(b);
-              setValue("beneficiario_id", b?.id ?? "", { shouldValidate: !!b });
-            }}
+            onChange={handleBeneficiarioChange}
             error={errors.beneficiario_id?.message}
           />
         </CardContent>

@@ -117,6 +117,7 @@ export type Database = {
           cidade: string;
           uf: string;
           cep: string | null;
+          prioritario: boolean;
           criado_em: string;
           atualizado_em: string;
         };
@@ -131,6 +132,7 @@ export type Database = {
           cidade?: string;
           uf?: string;
           cep?: string | null;
+          prioritario?: boolean;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -145,6 +147,7 @@ export type Database = {
           cidade?: string;
           uf?: string;
           cep?: string | null;
+          prioritario?: boolean;
           criado_em?: string;
           atualizado_em?: string;
         };
