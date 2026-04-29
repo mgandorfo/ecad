@@ -287,18 +287,18 @@ Stack confirmada via `package.json`: Next.js 16.2.4, React 19, TypeScript 5, Tai
 
 ## Milestone 14 — Deploy em Produção
 
-**Branch:** `chore/m14-deploy`
+**Branch:** `chore/m14-deploy` ✅ mergeada em `master`
 **Objetivo:** publicar na Vercel + Supabase produção.
 
 **Entregas:**
-- [ ] Projeto Supabase de produção com migrations aplicadas
-- [ ] Seeds mínimos de produção (admin inicial, status padrão)
-- [ ] Projeto Vercel conectado ao GitHub
-- [ ] Variáveis de ambiente em Vercel (Preview + Production)
-- [ ] Domínio customizado e HTTPS
-- [ ] Smoke test em produção (login, criar atendimento, fila, dashboard)
-- [ ] README com instruções de setup e deploy
-- [ ] Backup e política de retenção no Supabase
+- [x] Projeto Supabase de produção com migrations aplicadas
+- [x] Seeds mínimos de produção (admin inicial, status padrão)
+- [x] Projeto Vercel conectado ao GitHub
+- [x] Variáveis de ambiente em Vercel (Preview + Production)
+- [x] Domínio customizado e HTTPS — usando domínio Vercel (`*.vercel.app`) por ora
+- [x] Smoke test em produção (login, criar atendimento, fila, dashboard)
+- [x] README com instruções de setup e deploy
+- [x] Backup e política de retenção no Supabase — backups diários automáticos (plano Free, 7 dias)
 
 **Commit final:** `chore(m14): deploy em produção`
 
