@@ -69,19 +69,23 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
     return { ok: false, error: "Já existe um usuário com este e-mail." };
   }
 
-  // Cria usuário via Supabase Auth (requer service role)
-  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-    email: parsed.data.email,
-    email_confirm: false,
-    user_metadata: { nome: parsed.data.nome },
-  });
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  // Envia convite por e-mail — o usuário recebe um link para definir a própria senha
+  const { data: authData, error: authError } = await adminClient.auth.admin.inviteUserByEmail(
+    parsed.data.email,
+    {
+      redirectTo: `${siteUrl}/auth/callback?next=/redefinir`,
+      data: { nome: parsed.data.nome },
+    }
+  );
 
   if (authError) {
     if (authError.message.includes("already registered")) {
       return { ok: false, error: "Já existe um usuário com este e-mail." };
     }
     console.error("[convidarUsuario] auth", authError.message);
-    return { ok: false, error: "Falha ao criar usuário. Tente novamente." };
+    return { ok: false, error: "Falha ao enviar convite. Tente novamente." };
   }
 
   // Atualiza o perfil criado pelo trigger com o nome e role corretos (service role ignora RLS)

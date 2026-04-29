@@ -196,7 +196,7 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
         actions={
           <Button onClick={openCreate}>
             <PlusIcon aria-hidden="true" />
-            Novo usuário
+            Convidar usuário
           </Button>
         }
       />
@@ -279,7 +279,10 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
         <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo usuário</DialogTitle>
+              <DialogTitle>Convidar usuário</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Um e-mail será enviado com o link para o usuário definir sua senha.
+              </p>
             </DialogHeader>
             <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
@@ -336,7 +339,7 @@ export function UsuariosClient({ initialItems, initialTotal }: Props) {
                 </Button>
                 <Button type="submit" disabled={isPending}>
                   {isPending && <Loader2Icon className="animate-spin" />}
-                  Criar usuário
+                  Enviar convite
                 </Button>
               </DialogFooter>
             </form>
