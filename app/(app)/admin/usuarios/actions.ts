@@ -75,7 +75,7 @@ export async function convidarUsuario(raw: UsuarioCreateData): Promise<ActionRes
   const { data: authData, error: authError } = await adminClient.auth.admin.inviteUserByEmail(
     parsed.data.email,
     {
-      redirectTo: `${siteUrl}/auth/callback?next=/redefinir`,
+      redirectTo: `${siteUrl}/auth/callback`,
       data: { nome: parsed.data.nome },
     }
   );
