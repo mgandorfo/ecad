@@ -48,11 +48,11 @@ const ROLES: { value: Role; label: string }[] = [
   { value: "vigilancia", label: "Vigilância" },
 ];
 
-const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline" | "destructive"> = {
-  admin: "default",
-  entrevistador: "secondary",
-  recepcionista: "outline",
-  vigilancia: "outline",
+const ROLE_VARIANT: Record<Role, "role-admin" | "role-entrevistador" | "role-recepcionista" | "role-vigilancia"> = {
+  admin: "role-admin",
+  entrevistador: "role-entrevistador",
+  recepcionista: "role-recepcionista",
+  vigilancia: "role-vigilancia",
 };
 
 const createSchema = z.object({

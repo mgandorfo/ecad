@@ -29,11 +29,11 @@ const roleLabels: Record<Role, string> = {
   vigilancia: "Vigilância",
 };
 
-const roleColors: Record<Role, string> = {
-  admin: "bg-destructive/15 text-destructive border-destructive/20",
-  entrevistador: "bg-primary/15 text-primary border-primary/20",
-  recepcionista: "bg-chart-3/15 text-chart-3 border-chart-3/20",
-  vigilancia: "bg-muted text-muted-foreground border-border",
+const roleVariant: Record<Role, "role-admin" | "role-entrevistador" | "role-recepcionista" | "role-vigilancia"> = {
+  admin: "role-admin",
+  entrevistador: "role-entrevistador",
+  recepcionista: "role-recepcionista",
+  vigilancia: "role-vigilancia",
 };
 
 interface TopbarProps {
@@ -100,7 +100,8 @@ export function Topbar({ user, mobileSidebar }: TopbarProps) {
                 <div className="font-semibold text-sm truncate">{user.nome}</div>
                 <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
                 <Badge
-                  className={`mt-1.5 text-[10px] px-1.5 py-0 font-medium border ${roleColors[user.role]}`}
+                  variant={roleVariant[user.role]}
+                  className="mt-1.5"
                 >
                   {roleLabels[user.role]}
                 </Badge>

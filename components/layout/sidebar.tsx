@@ -55,8 +55,8 @@ export function Sidebar({ role, onNavigate }: SidebarProps) {
         })}
 
         {adminNavItems.length > 0 && (
-          <div className="mt-4">
-            <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+          <div className="mt-2">
+            <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/40">
               Administração
             </p>
             {adminNavItems.map((item) => {

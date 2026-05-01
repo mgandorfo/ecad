@@ -19,6 +19,15 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        /* Role badges — mirrors design system role colors */
+        "role-admin":
+          "bg-destructive/15 text-destructive border border-destructive/25",
+        "role-entrevistador":
+          "bg-primary/18 text-primary border border-primary/25",
+        "role-recepcionista":
+          "bg-chart-3/18 text-chart-3 border border-chart-3/25",
+        "role-vigilancia":
+          "bg-muted text-muted-foreground border border-border",
       },
     },
     defaultVariants: {

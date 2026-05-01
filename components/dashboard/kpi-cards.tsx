@@ -60,18 +60,18 @@ export function KPICards(props: KPICardsProps) {
             className={`border-l-4 ${card.accent} transition-shadow hover:shadow-md`}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-[13px] font-medium text-muted-foreground">
                 {card.label}
               </CardTitle>
-              <div className={`rounded-lg p-2 ${card.iconBg}`}>
-                <Icon className={`size-4 ${card.iconColor}`} />
+              <div className={`rounded-lg p-1.5 ${card.iconBg}`}>
+                <Icon className={`size-3.5 ${card.iconColor}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tracking-tight">
+              <div className="text-[28px] font-bold tracking-[-0.02em] leading-none">
                 {card.value}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">{card.sub}</p>
             </CardContent>
           </Card>
         );

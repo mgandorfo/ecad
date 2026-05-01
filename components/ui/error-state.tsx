@@ -25,12 +25,12 @@ export function ErrorState({
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-        <AlertTriangleIcon className="size-5" aria-hidden="true" />
+      <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <AlertTriangleIcon className="size-6" aria-hidden="true" />
       </div>
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground max-w-sm">{description}</p>
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed">{description}</p>
       </div>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry} className="mt-1">
