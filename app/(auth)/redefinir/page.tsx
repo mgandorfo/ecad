@@ -25,20 +25,30 @@ export default function RedefinirPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Aguarda o SDK processar o hash fragment ou confirmar sessão já existente
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setReady(true);
-      } else {
-        setError("Sessão inválida ou expirada. Solicite um novo convite.");
       }
+      // Ignora eventos sem sessão — o SDK emite INITIAL_SESSION com null antes de processar o hash
     });
 
+    // Verifica se sessão já existe (fluxo de reset de senha normal)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true);
     });
 
-    return () => subscription.unsubscribe();
+    // Timeout de segurança: se após 5s ainda não tiver sessão, mostra erro
+    const timeout = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError("Sessão inválida ou expirada. Solicite um novo convite.");
+      }
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -65,7 +75,7 @@ export default function RedefinirPage() {
     setPending(false);
 
     if (error) {
-      setError("Não foi possível redefinir a senha. O link pode ter expirado.");
+      setError("Não foi possível redefinir a senha. Tente novamente.");
       return;
     }
 
