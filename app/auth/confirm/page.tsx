@@ -2,33 +2,20 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
-// Trata o fluxo de convite do Supabase que chega via hash fragment:
-// /auth/confirm#access_token=...&refresh_token=...&type=invite
-// O hash só é acessível no cliente — não pode ser lido em route handlers server-side.
+// Redireciona para /redefinir preservando o hash fragment com o token de convite.
+// O hash não pode ser lido server-side — a substituição precisa ser feita no cliente.
 export default function AuthConfirmPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-
-    // Listener para eventos futuros (caso o SDK ainda não tenha processado o hash)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
-        router.replace("/redefinir");
-      }
-    });
-
-    // Verifica sessão já existente (caso o SDK já tenha processado o hash antes do listener)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace("/redefinir");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    const hash = window.location.hash;
+    if (hash) {
+      router.replace(`/redefinir${hash}`);
+    } else {
+      router.replace("/redefinir");
+    }
   }, [router]);
 
   return (

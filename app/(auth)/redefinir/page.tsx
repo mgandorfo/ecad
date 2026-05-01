@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import {
@@ -17,9 +17,29 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function RedefinirPage() {
   const router = useRouter();
+  const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ senha?: string; confirmacao?: string }>({});
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Aguarda o SDK processar o hash fragment ou confirmar sessão já existente
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setReady(true);
+      } else {
+        setError("Sessão inválida ou expirada. Solicite um novo convite.");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,6 +72,17 @@ export default function RedefinirPage() {
     router.replace("/login?redefinido=1");
   }
 
+  if (!ready && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin" />
+          <p className="text-sm">Verificando acesso…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="text-center">
@@ -68,6 +99,7 @@ export default function RedefinirPage() {
               type="password"
               placeholder="Mínimo 8 caracteres"
               autoComplete="new-password"
+              disabled={!ready}
               required
             />
             {fieldErrors.senha && (
@@ -83,6 +115,7 @@ export default function RedefinirPage() {
               type="password"
               placeholder="Repita a senha"
               autoComplete="new-password"
+              disabled={!ready}
               required
             />
             {fieldErrors.confirmacao && (
@@ -94,7 +127,7 @@ export default function RedefinirPage() {
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          <Button className="w-full mt-1" type="submit" disabled={pending}>
+          <Button className="w-full mt-1" type="submit" disabled={pending || !ready}>
             {pending ? (
               <>
                 <Loader2 className="size-4 mr-2 animate-spin" />
