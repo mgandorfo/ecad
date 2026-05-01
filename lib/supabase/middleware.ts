@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rotas que não exigem sessão
-const PUBLIC_PATHS = ["/login", "/recuperar", "/redefinir", "/auth/callback"];
+const PUBLIC_PATHS = ["/login", "/recuperar", "/redefinir", "/auth/callback", "/auth/confirm"];
 // Rotas que exigem sessão mas não redirecionam usuário logado para /dashboard
 const AUTH_ONLY_PATHS = ["/onboarding"];
 
