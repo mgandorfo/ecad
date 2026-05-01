@@ -25,25 +25,26 @@ export default function RedefinirPage() {
   useEffect(() => {
     const supabase = createClient();
 
+    // O SDK detecta o hash fragment automaticamente via onAuthStateChange.
+    // SIGNED_IN é emitido quando o token do convite é processado com sucesso.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
         setReady(true);
       }
-      // Ignora eventos sem sessão — o SDK emite INITIAL_SESSION com null antes de processar o hash
     });
 
-    // Verifica se sessão já existe (fluxo de reset de senha normal)
+    // Verifica sessão já existente (fluxo de reset de senha normal, sem hash)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true);
     });
 
-    // Timeout de segurança: se após 5s ainda não tiver sessão, mostra erro
+    // Timeout: se após 8s ainda não tiver sessão, o token provavelmente expirou
     const timeout = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError("Sessão inválida ou expirada. Solicite um novo convite.");
       }
-    }, 5000);
+    }, 8000);
 
     return () => {
       subscription.unsubscribe();
