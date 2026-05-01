@@ -14,14 +14,21 @@ export default function AuthConfirmPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    // Listener para eventos futuros (caso o SDK ainda não tenha processado o hash)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
         router.replace("/redefinir");
       }
     });
 
-    // Dispara a leitura do hash — o SDK detecta o token automaticamente
-    supabase.auth.getSession();
+    // Verifica sessão já existente (caso o SDK já tenha processado o hash antes do listener)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace("/redefinir");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [router]);
 
   return (
