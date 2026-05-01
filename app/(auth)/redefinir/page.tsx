@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import {
   Card,
@@ -12,10 +13,44 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { redefinirSenha } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RedefinirPage() {
-  const [state, action, pending] = useActionState(redefinirSenha, null);
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ senha?: string; confirmacao?: string }>({});
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const form = new FormData(e.currentTarget);
+    const senha = form.get("senha") as string;
+    const confirmacao = form.get("confirmacao") as string;
+
+    if (senha.length < 8) {
+      setFieldErrors({ senha: "Mínimo 8 caracteres" });
+      return;
+    }
+    if (senha !== confirmacao) {
+      setFieldErrors({ confirmacao: "As senhas não coincidem" });
+      return;
+    }
+
+    setPending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: senha });
+    setPending(false);
+
+    if (error) {
+      setError("Não foi possível redefinir a senha. O link pode ter expirado.");
+      return;
+    }
+
+    router.replace("/login?redefinido=1");
+  }
 
   return (
     <Card>
@@ -24,7 +59,7 @@ export default function RedefinirPage() {
         <CardDescription>Escolha uma nova senha para sua conta</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="senha">Nova senha</Label>
             <Input
@@ -35,10 +70,8 @@ export default function RedefinirPage() {
               autoComplete="new-password"
               required
             />
-            {state?.fieldErrors?.senha && (
-              <p className="text-xs text-destructive">
-                {state.fieldErrors.senha[0]}
-              </p>
+            {fieldErrors.senha && (
+              <p className="text-xs text-destructive">{fieldErrors.senha}</p>
             )}
           </div>
 
@@ -52,15 +85,13 @@ export default function RedefinirPage() {
               autoComplete="new-password"
               required
             />
-            {state?.fieldErrors?.confirmacao && (
-              <p className="text-xs text-destructive">
-                {state.fieldErrors.confirmacao[0]}
-              </p>
+            {fieldErrors.confirmacao && (
+              <p className="text-xs text-destructive">{fieldErrors.confirmacao}</p>
             )}
           </div>
 
-          {state?.error && (
-            <p className="text-sm text-destructive text-center">{state.error}</p>
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
           <Button className="w-full mt-1" type="submit" disabled={pending}>
