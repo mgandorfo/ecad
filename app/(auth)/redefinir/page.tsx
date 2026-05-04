@@ -13,7 +13,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+// Cliente vanilla com detectSessionInUrl: true para processar hash fragment do convite.
+// O createBrowserClient do @supabase/ssr não detecta hash automaticamente.
+function createClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { detectSessionInUrl: true, flowType: "implicit" } }
+  );
+}
 
 export default function RedefinirPage() {
   const router = useRouter();
@@ -25,20 +35,16 @@ export default function RedefinirPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // O SDK detecta o hash fragment automaticamente via onAuthStateChange.
-    // SIGNED_IN é emitido quando o token do convite é processado com sucesso.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
         setReady(true);
       }
     });
 
-    // Verifica sessão já existente (fluxo de reset de senha normal, sem hash)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true);
     });
 
-    // Timeout: se após 8s ainda não tiver sessão, o token provavelmente expirou
     const timeout = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
