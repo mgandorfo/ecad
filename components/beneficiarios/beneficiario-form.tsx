@@ -26,12 +26,12 @@ const schema = z.object({
     .string()
     .min(1, "CPF obrigatório")
     .refine((v) => validateCpf(v), "CPF inválido"),
-  logradouro: z.string().min(1, "Logradouro obrigatório").max(200),
-  numero: z.string().min(1, "Número obrigatório").max(10),
+  logradouro: z.string().max(200).optional(),
+  numero: z.string().max(10).optional(),
   complemento: z.string().max(100).optional(),
-  bairro: z.string().min(1, "Bairro obrigatório").max(100),
-  cidade: z.string().min(1, "Cidade obrigatória").max(100),
-  uf: z.string().length(2, "UF inválida"),
+  bairro: z.string().max(100).optional(),
+  cidade: z.string().max(100).optional(),
+  uf: z.string().length(2, "UF inválida").or(z.literal("")).optional(),
   cep: z.string().optional(),
   prioritario: z.boolean(),
 });
@@ -62,16 +62,16 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
       ? {
           nome: initial.nome,
           cpf: initial.cpf,
-          logradouro: initial.logradouro,
-          numero: initial.numero,
+          logradouro: initial.logradouro ?? "",
+          numero: initial.numero ?? "",
           complemento: initial.complemento ?? "",
-          bairro: initial.bairro,
-          cidade: initial.cidade,
-          uf: initial.uf,
+          bairro: initial.bairro ?? "",
+          cidade: initial.cidade ?? "",
+          uf: initial.uf ?? "",
           cep: initial.cep ?? "",
           prioritario: initial.prioritario,
         }
-      : { cidade: "Caarapo", uf: "MS", prioritario: false },
+      : { prioritario: false },
   });
 
   useEffect(() => {
@@ -142,7 +142,8 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
       {/* Endereço */}
       <fieldset className="flex flex-col gap-4">
         <legend className="text-sm font-semibold text-muted-foreground mb-2">
-          Endereço
+          Endereço{" "}
+          <span className="font-normal">(opcional)</span>
         </legend>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -240,6 +241,7 @@ export function BeneficiarioForm({ initial, onSave, onCancel }: BeneficiarioForm
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               aria-invalid={!!errors.uf}
             >
+              <option value="">—</option>
               {UF_OPTIONS.map((uf) => (
                 <option key={uf} value={uf}>
                   {uf}

@@ -121,9 +121,9 @@ export function BeneficiarioDetailClient({ beneficiario, atendimentos, cpfFormat
               <div className="col-span-2 sm:col-span-3">
                 <InfoRow label="Endereço Completo" value={enderecoCompleto} />
               </div>
-              <InfoRow label="CEP" value={beneficiario.cep || "—"} />
-              <InfoRow label="Cidade" value={beneficiario.cidade} />
-              <InfoRow label="UF" value={beneficiario.uf} />
+              <InfoRow label="CEP" value={beneficiario.cep ?? undefined} />
+              <InfoRow label="Cidade" value={beneficiario.cidade ?? undefined} />
+              <InfoRow label="UF" value={beneficiario.uf ?? undefined} />
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
               <CalendarIcon className="size-3.5" />
@@ -171,7 +171,7 @@ export function BeneficiarioDetailClient({ beneficiario, atendimentos, cpfFormat
                           {a.setor?.nome ?? a.setor_id}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {a.servico?.nome ?? a.servico_id}
+                          {a.servico?.nome ?? "—"}
                         </TableCell>
                         <TableCell>
                           {a.status ? (

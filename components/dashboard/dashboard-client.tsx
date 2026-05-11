@@ -59,7 +59,7 @@ export function DashboardClient({
   }
 
   const temFiltroAtivo = setorId !== "" || (role !== "entrevistador" && servidorId !== "");
-  const podeVerServidor = role === "admin" || role === "vigilancia";
+  const podeVerServidor = role === "admin" || role === "vigilancia" || role === "recepcionista";
 
   const setorNome = setores.find((s) => s.id === setorId)?.nome ?? "Todos os setores";
   const servidorNome = servidores.find((s) => s.id === servidorId)?.nome ?? "Todos os servidores";

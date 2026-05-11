@@ -93,7 +93,7 @@ export function agruparPorSetor(atendimentos: Atendimento[]) {
 export function agruparPorServico(atendimentos: Atendimento[]) {
   const map = new Map<string, number>();
   for (const a of atendimentos) {
-    const nome = a.servico?.nome ?? a.servico_id;
+    const nome = a.servico?.nome ?? a.servico_id ?? "Sem serviço";
     map.set(nome, (map.get(nome) ?? 0) + 1);
   }
   return Array.from(map.entries())

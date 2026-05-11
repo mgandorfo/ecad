@@ -22,7 +22,7 @@ export const navItems: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "entrevistador", "vigilancia"],
+    roles: ["admin", "entrevistador", "vigilancia", "recepcionista"],
   },
   {
     label: "Atendimentos",
@@ -40,7 +40,7 @@ export const navItems: NavItem[] = [
     label: "Relatórios",
     href: "/relatorios",
     icon: FileText,
-    roles: ["admin", "entrevistador", "vigilancia"],
+    roles: ["admin", "entrevistador", "vigilancia", "recepcionista"],
   },
   {
     label: "Setores",

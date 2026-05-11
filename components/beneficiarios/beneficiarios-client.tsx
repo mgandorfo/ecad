@@ -150,7 +150,9 @@ export function BeneficiariosClient({ initialItems, initialTotal }: Props) {
                   <TableCell className="font-medium">{b.nome}</TableCell>
                   <TableCell className="font-mono text-sm">{formatCpf(b.cpf)}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{enderecoResumido(b)}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{b.cidade} / {b.uf}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {b.cidade && b.uf ? `${b.cidade} / ${b.uf}` : (b.cidade ?? b.uf ?? "—")}
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <RowActions
                       onEdit={() => router.push(`/beneficiarios/${b.id}`)}
