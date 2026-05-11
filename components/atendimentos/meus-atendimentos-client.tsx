@@ -130,7 +130,7 @@ export function MeusAtendimentosClient() {
                   </TableCell>
                   <TableCell>
                     <p className="text-sm">{a.setor?.codigo}</p>
-                    <p className="text-xs text-muted-foreground">{a.servico?.nome}</p>
+                    <p className="text-xs text-muted-foreground">{a.servico?.nome ?? "—"}</p>
                   </TableCell>
                   <TableCell>
                     <PrioridadeBadge prioritario={a.prioritario} showNormal />

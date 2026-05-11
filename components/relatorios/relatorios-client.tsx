@@ -75,7 +75,7 @@ export function RelatoriosClient({
   const [dataInicio, setDataInicio] = useState(filtrosIniciais.dataInicio);
   const [dataFim, setDataFim] = useState(filtrosIniciais.dataFim);
 
-  const podeVerServidor = role === "admin" || role === "vigilancia";
+  const podeVerServidor = role === "admin" || role === "vigilancia" || role === "recepcionista";
   const totalPages = Math.ceil(totalRegistros / PAGE_SIZE);
   const currentPage = filtrosIniciais.page;
 

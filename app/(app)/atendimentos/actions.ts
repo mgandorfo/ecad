@@ -16,7 +16,7 @@ export type ActionResult<T = void> =
 export type AtendimentoComJoins = Atendimento & {
   beneficiario: NonNullable<Atendimento["beneficiario"]>;
   setor: Setor;
-  servico: Servico;
+  servico: Servico | null;
   status: StatusAtendimento;
   servidor: Perfil | null;
 };
@@ -112,7 +112,7 @@ export async function getAtendimento(id: string): Promise<AtendimentoComJoins | 
 const criarSchema = z.object({
   beneficiario_id: z.string().min(1, "Selecione um beneficiário"),
   setor_id: z.string().min(1, "Selecione um setor"),
-  servico_id: z.string().min(1, "Selecione um serviço"),
+  servico_id: z.string().optional(),
   prioritario: z.boolean(),
   anotacoes: z.string().max(5000, "Anotações muito longas (máximo 5.000 caracteres)").optional(),
 });
@@ -146,7 +146,7 @@ export async function criarAtendimento(
     .insert({
       beneficiario_id: parsed.data.beneficiario_id,
       setor_id: parsed.data.setor_id,
-      servico_id: parsed.data.servico_id,
+      servico_id: parsed.data.servico_id || null,
       status_id: statusInicial.id,
       criado_por: user.id,
       prioritario: parsed.data.prioritario,
@@ -431,6 +431,70 @@ export async function trocarEntrevistador(
     entity: "atendimentos",
     entityId: id,
     payload: { novo_servidor_id },
+  });
+
+  revalidatePath(`/atendimentos/${id}`);
+  revalidatePath("/atendimentos");
+  return { ok: true, data: undefined };
+}
+
+export async function atualizarServico(
+  id: string,
+  servico_id: string
+): Promise<ActionResult> {
+  const idParsed = uuidSchema.safeParse(id);
+  if (!idParsed.success) return { ok: false, error: "ID de atendimento inválido." };
+
+  const svParsed = uuidSchema.safeParse(servico_id);
+  if (!svParsed.success) return { ok: false, error: "Serviço inválido." };
+
+  const supabase = await createClient();
+  const user = await getRequiredUser();
+
+  if (user.role !== "admin" && user.role !== "entrevistador") {
+    return { ok: false, error: "Sem permissão para editar serviço." };
+  }
+
+  const { data: at } = await supabase
+    .from("atendimentos")
+    .select("setor_id, servidor_id, concluido_em")
+    .eq("id", id)
+    .single();
+
+  if (!at) return { ok: false, error: "Atendimento não encontrado." };
+  if (at.concluido_em) return { ok: false, error: "Atendimento já concluído." };
+  if (user.role === "entrevistador" && at.servidor_id !== user.id) {
+    return { ok: false, error: "Sem permissão para editar este atendimento." };
+  }
+
+  const { data: sv } = await supabase
+    .from("servicos")
+    .select("setor_id, ativo")
+    .eq("id", servico_id)
+    .single();
+
+  if (!sv) return { ok: false, error: "Serviço não encontrado." };
+  if (!sv.ativo) return { ok: false, error: "Serviço inativo." };
+  if (sv.setor_id !== at.setor_id) {
+    return { ok: false, error: "Serviço não pertence ao setor deste atendimento." };
+  }
+
+  const { error } = await supabase
+    .from("atendimentos")
+    .update({ servico_id })
+    .eq("id", id);
+
+  if (error) {
+    console.error("[atualizarServico]", error.message);
+    return { ok: false, error: "Falha ao atualizar serviço. Tente novamente." };
+  }
+
+  await registrarAuditoria({
+    userId: user.id,
+    action: "atualizar_servico",
+    entity: "atendimentos",
+    entityId: id,
+    payload: { servico_id },
   });
 
   revalidatePath(`/atendimentos/${id}`);

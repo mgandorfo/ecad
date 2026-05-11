@@ -18,11 +18,12 @@ import {
   assumirAtendimento,
   atualizarStatus,
   atualizarAnotacoes,
+  atualizarServico,
   concluirAtendimento,
   trocarEntrevistador,
   type AtendimentoComJoins,
 } from "@/app/(app)/atendimentos/actions";
-import type { Perfil, StatusAtendimento } from "@/lib/types";
+import type { Perfil, Servico, StatusAtendimento } from "@/lib/types";
 import { useRole } from "@/lib/role-context";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -66,6 +67,7 @@ interface AtendimentoDetalheClientProps {
   atendimento: AtendimentoComJoins;
   allStatus: StatusAtendimento[];
   entrevistadores: Perfil[];
+  servicos: Servico[];
   userId: string;
 }
 
@@ -73,6 +75,7 @@ export function AtendimentoDetalheClient({
   atendimento,
   allStatus,
   entrevistadores,
+  servicos,
   userId,
 }: AtendimentoDetalheClientProps) {
   const router = useRouter();
@@ -81,6 +84,7 @@ export function AtendimentoDetalheClient({
 
   const [anotacoes, setAnotacoes] = useState(atendimento.anotacoes ?? "");
   const [statusSelecionado, setStatusSelecionado] = useState(atendimento.status_id);
+  const [servicoSelecionado, setServicoSelecionado] = useState(atendimento.servico_id ?? "");
   const [confirmConcluir, setConfirmConcluir] = useState(false);
   const [assumirConfirm, setAssumirConfirm] = useState(false);
   const [trocarDialogOpen, setTrocarDialogOpen] = useState(false);
@@ -153,8 +157,19 @@ export function AtendimentoDetalheClient({
     });
   }
 
+  function handleSalvarServico() {
+    if (!servicoSelecionado) return;
+    startTransition(async () => {
+      const result = await atualizarServico(atendimento.id, servicoSelecionado);
+      if (!result.ok) { toast.error(result.error); return; }
+      toast.success("Serviço definido.");
+      router.refresh();
+    });
+  }
+
   const b = atendimento.beneficiario;
-  const endereco = [b.logradouro, b.numero, b.complemento, b.bairro, `${b.cidade}/${b.uf}`]
+  const cidadeUf = b.cidade && b.uf ? `${b.cidade}/${b.uf}` : (b.cidade ?? b.uf ?? null);
+  const endereco = [b.logradouro, b.numero, b.complemento, b.bairro, cidadeUf]
     .filter(Boolean)
     .join(", ");
 
@@ -389,10 +404,47 @@ export function AtendimentoDetalheClient({
               <Separator />
               <div>
                 <p className="text-muted-foreground text-xs">Serviço</p>
-                <p className="font-medium">
-                  {atendimento.servico.codigo} — {atendimento.servico.nome}
-                </p>
+                {atendimento.servico ? (
+                  <p className="font-medium">
+                    {atendimento.servico.codigo} — {atendimento.servico.nome}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground italic text-xs">Não definido</p>
+                )}
               </div>
+              {canEdit && !atendimento.servico_id && servicos.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="servico-select" className="text-xs">Definir serviço</Label>
+                    <Select
+                      value={servicoSelecionado || null}
+                      onValueChange={(v) => { if (v) setServicoSelecionado(v); }}
+                      items={servicos.map((s) => ({ value: s.id, label: `${s.codigo} — ${s.nome}` }))}
+                    >
+                      <SelectTrigger id="servico-select" className="h-8 text-xs">
+                        <SelectValue placeholder="Selecione o serviço..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {servicos.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.codigo} — {s.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      disabled={isPending || !servicoSelecionado}
+                      onClick={handleSalvarServico}
+                      className="self-end"
+                    >
+                      <SaveIcon />
+                      {isPending ? "Salvando..." : "Salvar"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 

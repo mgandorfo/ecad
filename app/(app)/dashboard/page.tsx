@@ -15,8 +15,7 @@ export default async function DashboardPage({
 }) {
   const user = await getCurrentUser();
 
-  // Recepcionista não tem acesso ao dashboard
-  if (!user || user.role === "recepcionista") redirect("/atendimentos");
+  if (!user) redirect("/login");
 
   const sp = await searchParams;
 

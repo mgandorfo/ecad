@@ -26,7 +26,7 @@ import type { Beneficiario, Setor, Servico } from "@/lib/types";
 const schema = z.object({
   beneficiario_id: z.string().min(1, "Selecione um beneficiário"),
   setor_id: z.string().min(1, "Selecione um setor"),
-  servico_id: z.string().min(1, "Selecione um serviço"),
+  servico_id: z.string().optional(),
   prioritario: z.boolean(),
   anotacoes: z.string().max(5000).optional(),
 });
@@ -37,13 +37,15 @@ interface AtendimentoFormProps {
   setores: Setor[];
   servicos: Servico[];
   onSave: (data: AtendimentoFormData, beneficiario: Beneficiario) => Promise<void>;
+  beneficiarioInicial?: Beneficiario | null;
+  onCadastrarNovoBeneficiario?: () => void;
 }
 
-export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormProps) {
-  const [beneficiario, setBeneficiario] = useState<Beneficiario | null>(null);
+export function AtendimentoForm({ setores, servicos, onSave, beneficiarioInicial, onCadastrarNovoBeneficiario }: AtendimentoFormProps) {
+  const [beneficiario, setBeneficiario] = useState<Beneficiario | null>(beneficiarioInicial ?? null);
   const [setorId, setSetorId] = useState("");
   const [servicoId, setServicoId] = useState("");
-  const [prioritario, setPrioritario] = useState(false);
+  const [prioritario, setPrioritario] = useState(beneficiarioInicial?.prioritario ?? false);
   const [saving, setSaving] = useState(false);
 
   const {
@@ -54,10 +56,10 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
   } = useForm<AtendimentoFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      beneficiario_id: "",
+      beneficiario_id: beneficiarioInicial?.id ?? "",
       setor_id: "",
       servico_id: "",
-      prioritario: false,
+      prioritario: beneficiarioInicial?.prioritario ?? false,
       anotacoes: "",
     },
   });
@@ -77,9 +79,8 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
   }
 
   function handleServicoChange(v: string | null) {
-    if (!v) return;
-    setServicoId(v);
-    setValue("servico_id", v, { shouldValidate: true });
+    setServicoId(v ?? "");
+    setValue("servico_id", v ?? undefined, { shouldValidate: false });
   }
 
   function handleBeneficiarioChange(b: Beneficiario | null) {
@@ -128,6 +129,7 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
             value={beneficiario}
             onChange={handleBeneficiarioChange}
             error={errors.beneficiario_id?.message}
+            onCadastrarNovo={onCadastrarNovoBeneficiario}
           />
         </CardContent>
       </Card>
@@ -159,7 +161,10 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="servico-trigger">Serviço</Label>
+            <Label htmlFor="servico-trigger">
+              Serviço{" "}
+              <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
             <Select
               value={servicoId || null}
               onValueChange={handleServicoChange}
@@ -168,7 +173,7 @@ export function AtendimentoForm({ setores, servicos, onSave }: AtendimentoFormPr
             >
               <SelectTrigger id="servico-trigger" aria-invalid={!!errors.servico_id}>
                 <SelectValue
-                  placeholder={setorId ? "Selecione o serviço..." : "Selecione um setor primeiro"}
+                  placeholder={setorId ? "Selecione o serviço (opcional)..." : "Selecione um setor primeiro"}
                 />
               </SelectTrigger>
               <SelectContent>

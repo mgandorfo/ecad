@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useId, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { SearchIcon, XIcon, LoaderIcon } from "lucide-react";
+import { SearchIcon, XIcon, LoaderIcon, UserPlusIcon } from "lucide-react";
 
 import { listarBeneficiarios } from "@/app/(app)/beneficiarios/actions";
 import type { Beneficiario } from "@/lib/types";
@@ -15,6 +15,7 @@ interface BeneficiarioAutocompleteProps {
   onChange: (b: Beneficiario | null) => void;
   error?: string;
   disabled?: boolean;
+  onCadastrarNovo?: () => void;
 }
 
 export function BeneficiarioAutocomplete({
@@ -22,6 +23,7 @@ export function BeneficiarioAutocomplete({
   onChange,
   error,
   disabled,
+  onCadastrarNovo,
 }: BeneficiarioAutocompleteProps) {
   const inputId = useId();
   const [query, setQuery] = useState("");
@@ -143,8 +145,24 @@ export function BeneficiarioAutocomplete({
             ))}
           </ul>
         ) : !isPending ? (
-          <div className="rounded-md border bg-popover shadow-md px-3 py-4 text-sm text-center text-muted-foreground">
-            Nenhum beneficiário encontrado.
+          <div className="rounded-md border bg-popover shadow-md text-sm">
+            <p className="px-3 py-3 text-center text-muted-foreground">
+              Nenhum beneficiário encontrado.
+            </p>
+            {onCadastrarNovo && (
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                  onCadastrarNovo();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border-t text-sm font-medium text-primary hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                <UserPlusIcon className="size-4" />
+                Cadastrar novo beneficiário
+              </button>
+            )}
           </div>
         ) : null}
       </div>

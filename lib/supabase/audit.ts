@@ -4,6 +4,7 @@ export type AuditAction =
   | "assumir_atendimento"
   | "concluir_atendimento"
   | "trocar_entrevistador"
+  | "atualizar_servico"
   | "alterar_role_usuario"
   | "excluir_usuario"
   | "criar_usuario";

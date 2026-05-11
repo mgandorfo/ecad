@@ -14,8 +14,7 @@ export default async function RelatoriosPage({
 }) {
   const user = await getCurrentUser();
 
-  // Recepcionista não tem acesso aos relatórios
-  if (!user || user.role === "recepcionista") redirect("/atendimentos");
+  if (!user) redirect("/login");
 
   const sp = await searchParams;
 
